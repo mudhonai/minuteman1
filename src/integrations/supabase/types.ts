@@ -14,7 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      current_entry: {
+        Row: {
+          breaks: Json | null
+          id: string
+          start_time: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          breaks?: Json | null
+          id?: string
+          start_time: string
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          breaks?: Json | null
+          id?: string
+          start_time?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      time_entries: {
+        Row: {
+          breaks: Json | null
+          created_at: string
+          date: string
+          end_time: string
+          id: string
+          is_surcharge_day: boolean
+          net_work_duration_minutes: number
+          regular_minutes: number
+          start_time: string
+          surcharge_amount: number
+          surcharge_label: string | null
+          surcharge_minutes: number
+          total_break_duration_ms: number
+          user_id: string
+        }
+        Insert: {
+          breaks?: Json | null
+          created_at?: string
+          date: string
+          end_time: string
+          id?: string
+          is_surcharge_day?: boolean
+          net_work_duration_minutes: number
+          regular_minutes?: number
+          start_time: string
+          surcharge_amount?: number
+          surcharge_label?: string | null
+          surcharge_minutes?: number
+          total_break_duration_ms?: number
+          user_id: string
+        }
+        Update: {
+          breaks?: Json | null
+          created_at?: string
+          date?: string
+          end_time?: string
+          id?: string
+          is_surcharge_day?: boolean
+          net_work_duration_minutes?: number
+          regular_minutes?: number
+          start_time?: string
+          surcharge_amount?: number
+          surcharge_label?: string | null
+          surcharge_minutes?: number
+          total_break_duration_ms?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          break_reminder_enabled: boolean
+          created_at: string
+          custom_holidays: Json | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          break_reminder_enabled?: boolean
+          created_at?: string
+          custom_holidays?: Json | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          break_reminder_enabled?: boolean
+          created_at?: string
+          custom_holidays?: Json | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
