@@ -1,11 +1,114 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { AuthForm } from '@/components/AuthForm';
+import { Dashboard } from '@/components/Dashboard';
+import { History } from '@/components/History';
+import { Settings } from '@/components/Settings';
+import { useTimeTracking } from '@/hooks/useTimeTracking';
+import { Button } from '@/components/ui/button';
 
 const Index = () => {
+  const [user, setUser] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState<'dashboard' | 'history' | 'settings'>('dashboard');
+  
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const { currentEntry, timeEntries, settings, loading, status } = useTimeTracking(user?.id);
+
+  if (!user) {
+    return <AuthForm />;
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Lade Daten...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="max-w-lg mx-auto p-4 md:p-6">
+        <header className="mb-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-4xl font-extrabold text-accent">Minuteman</h1>
+              <p className="text-sm text-muted-foreground">IchWarDa - Dein Zeiterfassungs-Terminal</p>
+            </div>
+            <Button onClick={handleSignOut} variant="ghost" size="sm">
+              Abmelden
+            </Button>
+          </div>
+        </header>
+
+        <nav className="bg-card p-2 rounded-xl mb-6 shadow-xl border border-border">
+          <div className="flex justify-around">
+            <button
+              onClick={() => setCurrentPage('dashboard')}
+              className={`p-3 text-sm font-semibold rounded-lg transition-all ${
+                currentPage === 'dashboard'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Dashboard
+            </button>
+            <button
+              onClick={() => setCurrentPage('history')}
+              className={`p-3 text-sm font-semibold rounded-lg transition-all ${
+                currentPage === 'history'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Historie
+            </button>
+            <button
+              onClick={() => setCurrentPage('settings')}
+              className={`p-3 text-sm font-semibold rounded-lg transition-all ${
+                currentPage === 'settings'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Einstellungen
+            </button>
+          </div>
+        </nav>
+
+        <main>
+          {currentPage === 'dashboard' && (
+            <Dashboard
+              currentEntry={currentEntry}
+              timeEntries={timeEntries}
+              status={status}
+              userId={user.id}
+              customHolidays={settings?.custom_holidays || []}
+            />
+          )}
+          {currentPage === 'history' && <History timeEntries={timeEntries} />}
+          {currentPage === 'settings' && settings && (
+            <Settings settings={settings} userId={user.id} />
+          )}
+        </main>
       </div>
     </div>
   );
