@@ -6,10 +6,16 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AbsenceEntry, AbsenceType } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Trash2, Edit } from 'lucide-react';
+import { Plus, Trash2, Edit, CalendarIcon } from 'lucide-react';
+import { format, eachDayOfInterval } from 'date-fns';
+import { de } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import type { DateRange } from 'react-day-picker';
 
 interface AbsencesProps {
   absences: AbsenceEntry[];
@@ -30,14 +36,18 @@ const ABSENCE_COLORS: Record<AbsenceType, string> = {
 export const Absences = ({ absences }: AbsencesProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<AbsenceEntry | null>(null);
-  const [date, setDate] = useState('');
+  const [isMultiDay, setIsMultiDay] = useState(false);
+  const [singleDate, setSingleDate] = useState<Date | undefined>(new Date());
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [absenceType, setAbsenceType] = useState<AbsenceType>('urlaub');
   const [hours, setHours] = useState('8.5');
   const [note, setNote] = useState('');
 
   const openAddDialog = () => {
     setEditingEntry(null);
-    setDate(new Date().toISOString().split('T')[0]);
+    setIsMultiDay(false);
+    setSingleDate(new Date());
+    setDateRange(undefined);
     setAbsenceType('urlaub');
     setHours('8.5');
     setNote('');
@@ -46,7 +56,9 @@ export const Absences = ({ absences }: AbsencesProps) => {
 
   const openEditDialog = (entry: AbsenceEntry) => {
     setEditingEntry(entry);
-    setDate(entry.date);
+    setIsMultiDay(false);
+    setSingleDate(new Date(entry.date));
+    setDateRange(undefined);
     setAbsenceType(entry.absence_type);
     setHours(entry.hours.toString());
     setNote(entry.note || '');
@@ -63,15 +75,16 @@ export const Absences = ({ absences }: AbsencesProps) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Nicht angemeldet');
 
-      const entryData = {
-        user_id: user.id,
-        date,
-        absence_type: absenceType,
-        hours: parseFloat(hours),
-        note: note.trim() || null,
-      };
-
       if (editingEntry) {
+        // Editing single entry
+        const entryData = {
+          user_id: user.id,
+          date: singleDate ? format(singleDate, 'yyyy-MM-dd') : new Date().toISOString().split('T')[0],
+          absence_type: absenceType,
+          hours: parseFloat(hours),
+          note: note.trim() || null,
+        };
+
         const { error } = await supabase
           .from('absence_entries')
           .update(entryData)
@@ -80,12 +93,31 @@ export const Absences = ({ absences }: AbsencesProps) => {
         if (error) throw error;
         toast.success('Abwesenheit aktualisiert!');
       } else {
+        // Adding new entry(s)
+        const datesToInsert: Date[] = [];
+        
+        if (isMultiDay && dateRange?.from && dateRange?.to) {
+          // Multi-day range
+          datesToInsert.push(...eachDayOfInterval({ start: dateRange.from, end: dateRange.to }));
+        } else if (singleDate) {
+          // Single day
+          datesToInsert.push(singleDate);
+        }
+
+        const entries = datesToInsert.map(date => ({
+          user_id: user.id,
+          date: format(date, 'yyyy-MM-dd'),
+          absence_type: absenceType,
+          hours: parseFloat(hours),
+          note: note.trim() || null,
+        }));
+
         const { error } = await supabase
           .from('absence_entries')
-          .insert(entryData);
+          .insert(entries);
 
         if (error) throw error;
-        toast.success('Abwesenheit hinzugefügt!');
+        toast.success(`${entries.length} Abwesenheit${entries.length > 1 ? 'en' : ''} hinzugefügt!`);
       }
 
       closeDialog();
@@ -217,13 +249,92 @@ export const Absences = ({ absences }: AbsencesProps) => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {!editingEntry && (
+              <div className="flex gap-2 p-2 bg-muted rounded-lg">
+                <Button
+                  type="button"
+                  variant={!isMultiDay ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setIsMultiDay(false)}
+                  className="flex-1"
+                >
+                  Einzelner Tag
+                </Button>
+                <Button
+                  type="button"
+                  variant={isMultiDay ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setIsMultiDay(true)}
+                  className="flex-1"
+                >
+                  Zeitraum
+                </Button>
+              </div>
+            )}
+            
             <div>
               <Label>Datum</Label>
-              <Input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
+              {!isMultiDay || editingEntry ? (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !singleDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {singleDate ? format(singleDate, 'PPP', { locale: de }) : 'Datum wählen'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={singleDate}
+                      onSelect={setSingleDate}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !dateRange && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateRange?.from ? (
+                        dateRange.to ? (
+                          <>
+                            {format(dateRange.from, 'dd.MM.yy', { locale: de })} -{' '}
+                            {format(dateRange.to, 'dd.MM.yy', { locale: de })}
+                          </>
+                        ) : (
+                          format(dateRange.from, 'PPP', { locale: de })
+                        )
+                      ) : (
+                        'Zeitraum wählen'
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="range"
+                      selected={dateRange}
+                      onSelect={setDateRange}
+                      initialFocus
+                      numberOfMonths={2}
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
             </div>
             <div>
               <Label>Typ</Label>
