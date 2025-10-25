@@ -152,10 +152,13 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
 
   if (timeEntries.length === 0) {
     return (
-      <div className="w-full">
+      <div className="w-full p-4">
+        <div className="bg-red-500 text-white p-4 mb-4 text-center text-xl font-bold">
+          TEST: Du siehst mich? (Keine Einträge)
+        </div>
         <Button 
           onClick={openAddDialog} 
-          className="w-full mb-4 h-14 text-lg font-bold"
+          className="w-full mb-4 h-14 text-lg font-bold bg-green-500 hover:bg-green-600"
           size="lg"
         >
           <Plus className="h-6 w-6" />
@@ -172,7 +175,10 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full p-4">
+      <div className="bg-blue-500 text-white p-4 mb-4 text-center text-xl font-bold">
+        TEST: Du siehst mich? (Mit Einträgen: {timeEntries.length})
+      </div>
       <Button 
         onClick={openAddDialog} 
         className="w-full mb-4 h-14 text-lg font-bold"
