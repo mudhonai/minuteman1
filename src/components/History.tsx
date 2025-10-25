@@ -155,14 +155,27 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
       <div className="w-full">
         <div className="p-6 text-center">
           <p className="text-muted-foreground mb-4">Du hast noch keine abgeschlossenen Zeiteinträge.</p>
-          <Button 
-            onClick={openAddDialog} 
-            className="w-full h-14 text-lg font-bold"
-            size="lg"
+          <button
+            onClick={openAddDialog}
+            style={{
+              width: '100%',
+              height: '56px',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              fontSize: '18px',
+              fontWeight: 'bold',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}
           >
             <Plus className="h-6 w-6" />
             Neuen Tag hinzufügen
-          </Button>
+          </button>
           <p className="text-muted-foreground/70 mt-4 text-sm">
             Schließe einen Arbeitstag über das Dashboard ab oder füge manuell einen Tag hinzu.
           </p>
