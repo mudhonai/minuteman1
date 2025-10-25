@@ -48,10 +48,25 @@ export const Dashboard = ({ currentEntry, timeEntries, status, userId, customHol
     let todaySurchargeMinutes = 0;
     let weekTotalMinutes = liveMinutes;
     let weekSurchargeAmount = 0;
+    let weekOvertimeMinutes = 0;
     let monthTotalMinutes = liveMinutes;
     let monthSurchargeAmount = 0;
+    let monthOvertimeMinutes = 0;
 
     timeEntries.forEach(entry => {
+      const entryDayOfWeek = new Date(entry.start_time).getDay();
+      const isWeekendOrHoliday = entryDayOfWeek === 0 || entryDayOfWeek === 6 || entry.is_surcharge_day;
+      
+      // Für Wochenenden/Feiertage zählen alle Minuten als Überstunden
+      // Für Wochentage nur die Minuten über Soll
+      let overtimeForEntry = 0;
+      if (isWeekendOrHoliday) {
+        overtimeForEntry = entry.net_work_duration_minutes;
+      } else {
+        const targetForDay = TARGET_HOURS_DAILY[entryDayOfWeek] || 0;
+        overtimeForEntry = Math.max(0, entry.net_work_duration_minutes - targetForDay);
+      }
+
       if (entry.date === todayDateStr) {
         todayMinutes += entry.net_work_duration_minutes;
         todaySurchargeMinutes += entry.surcharge_minutes;
@@ -61,10 +76,12 @@ export const Dashboard = ({ currentEntry, timeEntries, status, userId, customHol
       if (entryDate >= weekStart) {
         weekTotalMinutes += entry.net_work_duration_minutes;
         weekSurchargeAmount += entry.surcharge_amount;
+        weekOvertimeMinutes += overtimeForEntry;
       }
       if (entry.date.startsWith(currentMonthStr)) {
         monthTotalMinutes += entry.net_work_duration_minutes;
         monthSurchargeAmount += entry.surcharge_amount;
+        monthOvertimeMinutes += overtimeForEntry;
       }
     });
 
@@ -76,10 +93,10 @@ export const Dashboard = ({ currentEntry, timeEntries, status, userId, customHol
       todaySurchargeMinutes,
       todayTargetMinutes,
       weekTotal: weekTotalMinutes,
-      weekOvertime: weekTotalMinutes - TARGET_HOURS_WEEKLY,
+      weekOvertime: weekOvertimeMinutes,
       weekSurchargeAmount,
       monthTotal: monthTotalMinutes,
-      monthOvertime: monthTotalMinutes - TARGET_HOURS_MONTHLY,
+      monthOvertime: monthOvertimeMinutes,
       monthSurchargeAmount,
     };
   }, [currentTime, timeEntries, liveMinutes]);
