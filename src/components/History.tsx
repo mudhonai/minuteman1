@@ -17,19 +17,35 @@ interface HistoryProps {
 
 export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
+  const [isAddingNew, setIsAddingNew] = useState(false);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [breaks, setBreaks] = useState<Break[]>([]);
 
   const openEditDialog = (entry: TimeEntry) => {
     setEditingEntry(entry);
+    setIsAddingNew(false);
     setStartTime(entry.start_time.substring(0, 16));
     setEndTime(entry.end_time.substring(0, 16));
     setBreaks([...entry.breaks]);
   };
 
+  const openAddDialog = () => {
+    setIsAddingNew(true);
+    setEditingEntry(null);
+    const now = new Date();
+    const start = new Date(now);
+    start.setHours(8, 0, 0, 0);
+    const end = new Date(now);
+    end.setHours(17, 0, 0, 0);
+    setStartTime(start.toISOString().substring(0, 16));
+    setEndTime(end.toISOString().substring(0, 16));
+    setBreaks([]);
+  };
+
   const closeEditDialog = () => {
     setEditingEntry(null);
+    setIsAddingNew(false);
     setStartTime('');
     setEndTime('');
     setBreaks([]);
@@ -50,8 +66,6 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
   };
 
   const saveEntry = async () => {
-    if (!editingEntry) return;
-
     try {
       const startISO = new Date(startTime).toISOString();
       const endISO = new Date(endTime).toISOString();
@@ -59,29 +73,47 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
       const { netMinutes, totalBreakMs } = calculateNetWorkDuration(startISO, endISO, breaks);
       const surcharge = calculateSurcharge(startISO, netMinutes, customHolidays);
 
-      const { error } = await supabase
-        .from('time_entries')
-        .update({
-          start_time: startISO,
-          end_time: endISO,
-          breaks: breaks as any,
-          net_work_duration_minutes: netMinutes,
-          total_break_duration_ms: totalBreakMs,
-          regular_minutes: surcharge.regularMinutes,
-          surcharge_minutes: surcharge.surchargeMinutes,
-          surcharge_amount: surcharge.surchargeAmount,
-          is_surcharge_day: surcharge.isSurchargeDay,
-          surcharge_label: surcharge.surchargeLabel,
-        })
-        .eq('id', editingEntry.id);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Nicht angemeldet');
 
-      if (error) throw error;
+      const entryData = {
+        start_time: startISO,
+        end_time: endISO,
+        breaks: breaks as any,
+        net_work_duration_minutes: netMinutes,
+        total_break_duration_ms: totalBreakMs,
+        regular_minutes: surcharge.regularMinutes,
+        surcharge_minutes: surcharge.surchargeMinutes,
+        surcharge_amount: surcharge.surchargeAmount,
+        is_surcharge_day: surcharge.isSurchargeDay,
+        surcharge_label: surcharge.surchargeLabel,
+        date: new Date(startISO).toISOString().split('T')[0],
+      };
 
-      toast.success('Eintrag erfolgreich aktualisiert');
+      if (isAddingNew) {
+        const { error } = await supabase
+          .from('time_entries')
+          .insert({
+            ...entryData,
+            user_id: user.id,
+          });
+
+        if (error) throw error;
+        toast.success('Neuer Eintrag erfolgreich erstellt');
+      } else if (editingEntry) {
+        const { error } = await supabase
+          .from('time_entries')
+          .update(entryData)
+          .eq('id', editingEntry.id);
+
+        if (error) throw error;
+        toast.success('Eintrag erfolgreich aktualisiert');
+      }
+
       closeEditDialog();
     } catch (error: any) {
-      console.error('Error updating entry:', error);
-      toast.error('Fehler beim Aktualisieren des Eintrags');
+      console.error('Error saving entry:', error);
+      toast.error('Fehler beim Speichern des Eintrags');
     }
   };
 
@@ -117,6 +149,12 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
   return (
     <>
       <div className="space-y-4">
+        <div className="flex justify-end mb-4">
+          <Button onClick={openAddDialog} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Neuen Tag hinzufügen
+          </Button>
+        </div>
         {timeEntries.map((entry) => (
           <Card key={entry.id} className="p-4 border-l-4 border-primary">
             <div className="flex justify-between items-start">
@@ -162,10 +200,10 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
         ))}
       </div>
 
-      <Dialog open={!!editingEntry} onOpenChange={closeEditDialog}>
+      <Dialog open={!!editingEntry || isAddingNew} onOpenChange={closeEditDialog}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Zeiteintrag bearbeiten</DialogTitle>
+            <DialogTitle>{isAddingNew ? 'Neuen Tag hinzufügen' : 'Zeiteintrag bearbeiten'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
