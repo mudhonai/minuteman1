@@ -108,6 +108,14 @@ export const useWorkActions = (userId: string | undefined, customHolidays: strin
         customHolidays
       );
 
+      // Delete current entry first
+      const { error: deleteError } = await supabase
+        .from('current_entry')
+        .delete()
+        .eq('user_id', userId);
+
+      if (deleteError) throw deleteError;
+
       // Save finished entry
       const { error: insertError } = await supabase
         .from('time_entries')
@@ -128,16 +136,9 @@ export const useWorkActions = (userId: string | undefined, customHolidays: strin
 
       if (insertError) throw insertError;
 
-      // Delete current entry
-      const { error: deleteError } = await supabase
-        .from('current_entry')
-        .delete()
-        .eq('user_id', userId);
-
-      if (deleteError) throw deleteError;
-
       toast.success('Arbeitstag erfolgreich abgeschlossen!');
     } catch (error: any) {
+      console.error('Error ending work:', error);
       toast.error(error.message || 'Fehler beim Beenden der Arbeit');
     }
   };
