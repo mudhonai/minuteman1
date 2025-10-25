@@ -7,6 +7,7 @@ import { Settings } from '@/components/Settings';
 import { Absences } from '@/components/Absences';
 import { CalendarView } from '@/components/CalendarView';
 import { Statistics } from '@/components/Statistics';
+import { PWAUpdatePrompt } from '@/components/PWAUpdatePrompt';
 import { useTimeTracking } from '@/hooks/useTimeTracking';
 import { useAbsences } from '@/hooks/useAbsences';
 import { Button } from '@/components/ui/button';
@@ -174,6 +175,9 @@ const Index = () => {
             <Settings settings={settings} userId={user.id} />
           )}
         </main>
+
+        {/* PWA Update Prompt */}
+        <PWAUpdatePrompt />
       </div>
     </div>
   );
