@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CurrentEntry, TimeEntry, TARGET_HOURS_DAILY, TARGET_HOURS_WEEKLY, TARGET_HOURS_MONTHLY } from '@/lib/types';
+import { CurrentEntry, TimeEntry, AbsenceEntry, TARGET_HOURS_DAILY, TARGET_HOURS_WEEKLY, TARGET_HOURS_MONTHLY } from '@/lib/types';
 import { formatMinutesToHHMM, formatGermanDateTime, calculateNetWorkDuration } from '@/lib/timeUtils';
 import { useWorkActions } from '@/hooks/useWorkActions';
 import html2canvas from 'html2canvas';
@@ -11,12 +11,13 @@ import { toast } from 'sonner';
 interface DashboardProps {
   currentEntry: CurrentEntry | null;
   timeEntries: TimeEntry[];
+  absences: AbsenceEntry[];
   status: 'idle' | 'working' | 'break';
   userId: string;
   customHolidays: string[];
 }
 
-export const Dashboard = ({ currentEntry, timeEntries, status, userId, customHolidays }: DashboardProps) => {
+export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId, customHolidays }: DashboardProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { startWork, startBreak, endBreak, endWork } = useWorkActions(userId, customHolidays);
 
@@ -49,16 +50,18 @@ export const Dashboard = ({ currentEntry, timeEntries, status, userId, customHol
     let weekTotalMinutes = liveMinutes;
     let weekSurchargeAmount = 0;
     let weekOvertimeMinutes = 0;
+    let weekTargetMinutes = 0;
     let monthTotalMinutes = liveMinutes;
     let monthSurchargeAmount = 0;
     let monthOvertimeMinutes = 0;
+    let monthTargetMinutes = 0;
 
+    // Process time entries
     timeEntries.forEach(entry => {
       const entryDayOfWeek = new Date(entry.start_time).getDay();
       const isWeekendOrHoliday = entryDayOfWeek === 0 || entryDayOfWeek === 6 || entry.is_surcharge_day;
       
       // Für Wochenenden/Feiertage zählen alle Minuten als Überstunden
-      // Für Wochentage nur die Minuten über Soll
       let overtimeForEntry = 0;
       if (isWeekendOrHoliday) {
         overtimeForEntry = entry.net_work_duration_minutes;
@@ -85,6 +88,46 @@ export const Dashboard = ({ currentEntry, timeEntries, status, userId, customHol
       }
     });
 
+    // Process absences
+    absences.forEach(absence => {
+      const absenceMinutes = absence.hours * 60;
+      const absenceDate = new Date(absence.date);
+      const absenceDayOfWeek = absenceDate.getDay();
+
+      if (absence.date === todayDateStr) {
+        if (absence.absence_type === 'urlaub') {
+          // Urlaub erfüllt Soll-Stunden
+          todayMinutes += absenceMinutes;
+        } else if (absence.absence_type === 'juep') {
+          // JÜP wird vom Überstundenkonto abgezogen (negativ)
+          todayMinutes += absenceMinutes;
+        }
+        // Krankheit wird nicht gezählt
+      }
+
+      if (absenceDate >= weekStart) {
+        weekTargetMinutes += TARGET_HOURS_DAILY[absenceDayOfWeek] || 0;
+        
+        if (absence.absence_type === 'urlaub') {
+          weekTotalMinutes += absenceMinutes;
+        } else if (absence.absence_type === 'juep') {
+          weekTotalMinutes += absenceMinutes;
+          weekOvertimeMinutes -= absenceMinutes; // JÜP reduziert Überstunden
+        }
+      }
+
+      if (absence.date.startsWith(currentMonthStr)) {
+        monthTargetMinutes += TARGET_HOURS_DAILY[absenceDayOfWeek] || 0;
+        
+        if (absence.absence_type === 'urlaub') {
+          monthTotalMinutes += absenceMinutes;
+        } else if (absence.absence_type === 'juep') {
+          monthTotalMinutes += absenceMinutes;
+          monthOvertimeMinutes -= absenceMinutes; // JÜP reduziert Überstunden
+        }
+      }
+    });
+
     const todayDayOfWeek = now.getDay();
     const todayTargetMinutes = TARGET_HOURS_DAILY[todayDayOfWeek] || 0;
 
@@ -99,7 +142,7 @@ export const Dashboard = ({ currentEntry, timeEntries, status, userId, customHol
       monthOvertime: monthOvertimeMinutes,
       monthSurchargeAmount,
     };
-  }, [currentTime, timeEntries, liveMinutes]);
+  }, [currentTime, timeEntries, absences, liveMinutes]);
 
   const getStatusCardClass = () => {
     if (status === 'working') return 'bg-primary/20 border-primary';

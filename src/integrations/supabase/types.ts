@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      absence_entries: {
+        Row: {
+          absence_type: Database["public"]["Enums"]["absence_type"]
+          created_at: string
+          date: string
+          hours: number
+          id: string
+          note: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          absence_type: Database["public"]["Enums"]["absence_type"]
+          created_at?: string
+          date: string
+          hours?: number
+          id?: string
+          note?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          absence_type?: Database["public"]["Enums"]["absence_type"]
+          created_at?: string
+          date?: string
+          hours?: number
+          id?: string
+          note?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       current_entry: {
         Row: {
           breaks: Json | null
@@ -127,7 +160,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      absence_type: "urlaub" | "juep" | "krankheit"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -254,6 +287,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      absence_type: ["urlaub", "juep", "krankheit"],
+    },
   },
 } as const

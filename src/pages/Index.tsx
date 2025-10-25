@@ -4,12 +4,14 @@ import { AuthForm } from '@/components/AuthForm';
 import { Dashboard } from '@/components/Dashboard';
 import { History } from '@/components/History';
 import { Settings } from '@/components/Settings';
+import { Absences } from '@/components/Absences';
 import { useTimeTracking } from '@/hooks/useTimeTracking';
+import { useAbsences } from '@/hooks/useAbsences';
 import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'history' | 'settings'>('dashboard');
+  const [currentPage, setCurrentPage] = useState<'dashboard' | 'history' | 'absences' | 'settings'>('dashboard');
   
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -24,6 +26,7 @@ const Index = () => {
   }, []);
 
   const { currentEntry, timeEntries, settings, loading, status } = useTimeTracking(user?.id);
+  const { absences, loading: absencesLoading } = useAbsences(user?.id);
 
   if (!user) {
     return <AuthForm />;
@@ -60,10 +63,10 @@ const Index = () => {
         </header>
 
         <nav className="bg-card p-2 rounded-xl mb-6 shadow-xl border border-border">
-          <div className="flex justify-around">
+          <div className="grid grid-cols-4 gap-1">
             <button
               onClick={() => setCurrentPage('dashboard')}
-              className={`p-3 text-sm font-semibold rounded-lg transition-all ${
+              className={`p-3 text-xs font-semibold rounded-lg transition-all ${
                 currentPage === 'dashboard'
                   ? 'bg-primary text-primary-foreground shadow-lg'
                   : 'bg-transparent text-muted-foreground hover:text-foreground'
@@ -73,7 +76,7 @@ const Index = () => {
             </button>
             <button
               onClick={() => setCurrentPage('history')}
-              className={`p-3 text-sm font-semibold rounded-lg transition-all ${
+              className={`p-3 text-xs font-semibold rounded-lg transition-all ${
                 currentPage === 'history'
                   ? 'bg-primary text-primary-foreground shadow-lg'
                   : 'bg-transparent text-muted-foreground hover:text-foreground'
@@ -82,14 +85,24 @@ const Index = () => {
               Historie
             </button>
             <button
+              onClick={() => setCurrentPage('absences')}
+              className={`p-3 text-xs font-semibold rounded-lg transition-all ${
+                currentPage === 'absences'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Abwesenheit
+            </button>
+            <button
               onClick={() => setCurrentPage('settings')}
-              className={`p-3 text-sm font-semibold rounded-lg transition-all ${
+              className={`p-3 text-xs font-semibold rounded-lg transition-all ${
                 currentPage === 'settings'
                   ? 'bg-primary text-primary-foreground shadow-lg'
                   : 'bg-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
-              Einstellungen
+              Settings
             </button>
           </div>
         </nav>
@@ -99,6 +112,7 @@ const Index = () => {
             <Dashboard
               currentEntry={currentEntry}
               timeEntries={timeEntries}
+              absences={absences}
               status={status}
               userId={user.id}
               customHolidays={settings?.custom_holidays || []}
@@ -109,6 +123,9 @@ const Index = () => {
               timeEntries={timeEntries} 
               customHolidays={settings?.custom_holidays || []}
             />
+          )}
+          {currentPage === 'absences' && (
+            <Absences absences={absences} />
           )}
           {currentPage === 'settings' && settings && (
             <Settings settings={settings} userId={user.id} />

@@ -64,4 +64,17 @@ export interface UserSettings {
   updated_at?: string;
 }
 
+export type AbsenceType = 'urlaub' | 'juep' | 'krankheit';
+
+export interface AbsenceEntry {
+  id: string;
+  user_id: string;
+  date: string;
+  absence_type: AbsenceType;
+  hours: number;
+  note?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export type WorkStatus = 'idle' | 'working' | 'break';
