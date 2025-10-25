@@ -104,7 +104,12 @@ const Index = () => {
               customHolidays={settings?.custom_holidays || []}
             />
           )}
-          {currentPage === 'history' && <History timeEntries={timeEntries} />}
+          {currentPage === 'history' && (
+            <History 
+              timeEntries={timeEntries} 
+              customHolidays={settings?.custom_holidays || []}
+            />
+          )}
           {currentPage === 'settings' && settings && (
             <Settings settings={settings} userId={user.id} />
           )}
