@@ -94,10 +94,11 @@ export const useTimeTracking = (userId: string | undefined) => {
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
+          console.log('Current entry change:', payload.eventType, payload);
           if (payload.eventType === 'DELETE') {
             setCurrentEntry(null);
             setStatus('idle');
-          } else {
+          } else if (payload.new) {
             const entry = {
               ...payload.new,
               breaks: (payload.new.breaks as any) as Break[]
