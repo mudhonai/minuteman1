@@ -22,9 +22,6 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
   const [endTime, setEndTime] = useState('');
   const [breaks, setBreaks] = useState<Break[]>([]);
 
-  console.log('History Component - timeEntries count:', timeEntries.length);
-  console.log('History Component - rendering button section');
-
   const openEditDialog = (entry: TimeEntry) => {
     setEditingEntry(entry);
     setIsAddingNew(false);
@@ -154,35 +151,37 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
   };
 
   if (timeEntries.length === 0) {
-    console.log('History: Rendering EMPTY state with button');
     return (
-      <>
-        <div className="mb-4" style={{ backgroundColor: 'red', padding: '10px' }}>
-          <Button onClick={openAddDialog} className="w-full gap-2 h-12 text-base font-semibold" style={{ backgroundColor: 'green', color: 'white' }}>
-            <Plus className="h-5 w-5" />
-            Neuen Tag hinzufügen
-          </Button>
-        </div>
+      <div className="w-full">
+        <Button 
+          onClick={openAddDialog} 
+          className="w-full mb-4 h-14 text-lg font-bold"
+          size="lg"
+        >
+          <Plus className="h-6 w-6" />
+          Neuen Tag hinzufügen
+        </Button>
         <div className="p-6 text-center">
           <p className="text-muted-foreground">Du hast noch keine abgeschlossenen Zeiteinträge.</p>
           <p className="text-muted-foreground/70 mt-2 text-sm">
             Schließe einen Arbeitstag über das Dashboard ab oder füge manuell einen Tag hinzu.
           </p>
         </div>
-      </>
+      </div>
     );
   }
 
-  console.log('History: Rendering WITH entries state');
   return (
-    <>
+    <div className="w-full">
+      <Button 
+        onClick={openAddDialog} 
+        className="w-full mb-4 h-14 text-lg font-bold"
+        size="lg"
+      >
+        <Plus className="h-6 w-6" />
+        Neuen Tag hinzufügen
+      </Button>
       <div className="space-y-4">
-        <div className="mb-4" style={{ backgroundColor: 'blue', padding: '10px' }}>
-          <Button onClick={openAddDialog} className="w-full gap-2 h-12 text-base font-semibold" style={{ backgroundColor: 'orange', color: 'white' }}>
-            <Plus className="h-5 w-5" />
-            Neuen Tag hinzufügen
-          </Button>
-        </div>
         {timeEntries.map((entry) => (
           <Card key={entry.id} className="p-4 border-l-4 border-primary">
             <div className="flex justify-between items-start">
@@ -307,6 +306,6 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 };
