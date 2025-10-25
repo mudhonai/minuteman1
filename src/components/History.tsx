@@ -22,6 +22,9 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
   const [endTime, setEndTime] = useState('');
   const [breaks, setBreaks] = useState<Break[]>([]);
 
+  console.log('History Component - timeEntries count:', timeEntries.length);
+  console.log('History Component - rendering button section');
+
   const openEditDialog = (entry: TimeEntry) => {
     setEditingEntry(entry);
     setIsAddingNew(false);
@@ -151,10 +154,11 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
   };
 
   if (timeEntries.length === 0) {
+    console.log('History: Rendering EMPTY state with button');
     return (
       <>
-        <div className="mb-4">
-          <Button onClick={openAddDialog} className="w-full gap-2 h-12 text-base font-semibold">
+        <div className="mb-4" style={{ backgroundColor: 'red', padding: '10px' }}>
+          <Button onClick={openAddDialog} className="w-full gap-2 h-12 text-base font-semibold" style={{ backgroundColor: 'green', color: 'white' }}>
             <Plus className="h-5 w-5" />
             Neuen Tag hinzufügen
           </Button>
@@ -169,11 +173,12 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
     );
   }
 
+  console.log('History: Rendering WITH entries state');
   return (
     <>
       <div className="space-y-4">
-        <div className="mb-4">
-          <Button onClick={openAddDialog} className="w-full gap-2 h-12 text-base font-semibold">
+        <div className="mb-4" style={{ backgroundColor: 'blue', padding: '10px' }}>
+          <Button onClick={openAddDialog} className="w-full gap-2 h-12 text-base font-semibold" style={{ backgroundColor: 'orange', color: 'white' }}>
             <Plus className="h-5 w-5" />
             Neuen Tag hinzufügen
           </Button>
