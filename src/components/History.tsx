@@ -152,52 +152,111 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
 
   if (timeEntries.length === 0) {
     return (
-      <div className="w-full">
+      <>
         <div className="p-6 text-center">
           <p className="text-muted-foreground mb-4">Du hast noch keine abgeschlossenen Zeiteinträge.</p>
-          <button
-            onClick={openAddDialog}
-            style={{
-              width: '100%',
-              height: '56px',
-              backgroundColor: '#3b82f6',
-              color: 'white',
-              fontSize: '18px',
-              fontWeight: 'bold',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px'
-            }}
+          <Button 
+            onClick={openAddDialog} 
+            className="w-full gap-2"
           >
-            <Plus className="h-6 w-6" />
+            <Plus className="h-4 w-4" />
             Neuen Tag hinzufügen
-          </button>
+          </Button>
           <p className="text-muted-foreground/70 mt-4 text-sm">
             Schließe einen Arbeitstag über das Dashboard ab oder füge manuell einen Tag hinzu.
           </p>
         </div>
-      </div>
+
+        <Dialog open={!!editingEntry || isAddingNew} onOpenChange={closeEditDialog}>
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{isAddingNew ? 'Neuen Tag hinzufügen' : 'Zeiteintrag bearbeiten'}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="start-time">Startzeit</Label>
+                <Input
+                  id="start-time"
+                  type="datetime-local"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="end-time">Endzeit</Label>
+                <Input
+                  id="end-time"
+                  type="datetime-local"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <Label>Pausen</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addBreak}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Pause hinzufügen
+                  </Button>
+                </div>
+                {breaks.map((breakItem, index) => (
+                  <Card key={index} className="p-3 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-xs">Pause {index + 1}</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeBreak(index)}
+                        className="h-6 w-6"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      <Input
+                        type="datetime-local"
+                        value={breakItem.start ? breakItem.start.substring(0, 16) : ''}
+                        onChange={(e) => updateBreak(index, 'start', e.target.value)}
+                        placeholder="Start"
+                      />
+                      <Input
+                        type="datetime-local"
+                        value={breakItem.end ? breakItem.end.substring(0, 16) : ''}
+                        onChange={(e) => updateBreak(index, 'end', e.target.value)}
+                        placeholder="Ende"
+                      />
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button onClick={saveEntry} className="flex-1">
+                  Speichern
+                </Button>
+                <Button onClick={closeEditDialog} variant="outline" className="flex-1">
+                  Abbrechen
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 
   return (
-    <div className="w-full">
-      <div className="bg-blue-500 text-white p-4 mb-4 text-center text-xl font-bold">
-        TEST: Du siehst mich? (Mit Einträgen: {timeEntries.length})
-      </div>
-      <Button 
-        onClick={openAddDialog} 
-        className="w-full mb-4 h-14 text-lg font-bold"
-        size="lg"
-      >
-        <Plus className="h-6 w-6" />
-        Neuen Tag hinzufügen
-      </Button>
+    <>
       <div className="space-y-4">
+        <Button onClick={openAddDialog} className="w-full gap-2 mb-4">
+          <Plus className="h-4 w-4" />
+          Neuen Tag hinzufügen
+        </Button>
         {timeEntries.map((entry) => (
           <Card key={entry.id} className="p-4 border-l-4 border-primary">
             <div className="flex justify-between items-start">
@@ -322,6 +381,6 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 };
