@@ -164,8 +164,8 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
   return (
     <>
       <div className="space-y-4">
-        <div className="flex justify-end mb-4">
-          <Button onClick={openAddDialog} className="gap-2">
+        <div className="sticky top-0 z-10 bg-background pb-4 pt-2">
+          <Button onClick={openAddDialog} className="w-full gap-2">
             <Plus className="h-4 w-4" />
             Neuen Tag hinzufügen
           </Button>
