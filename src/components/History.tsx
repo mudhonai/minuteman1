@@ -152,12 +152,20 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
 
   if (timeEntries.length === 0) {
     return (
-      <div className="p-6 text-center">
-        <p className="text-muted-foreground">Du hast noch keine abgeschlossenen Zeiteinträge.</p>
-        <p className="text-muted-foreground/70 mt-2 text-sm">
-          Schließe einen Arbeitstag über das Dashboard ab, um ihn hier zu sehen.
-        </p>
-      </div>
+      <>
+        <div className="sticky top-0 z-10 bg-background pb-4 pt-2">
+          <Button onClick={openAddDialog} className="w-full gap-2">
+            <Plus className="h-4 w-4" />
+            Neuen Tag hinzufügen
+          </Button>
+        </div>
+        <div className="p-6 text-center">
+          <p className="text-muted-foreground">Du hast noch keine abgeschlossenen Zeiteinträge.</p>
+          <p className="text-muted-foreground/70 mt-2 text-sm">
+            Schließe einen Arbeitstag über das Dashboard ab oder füge manuell einen Tag hinzu.
+          </p>
+        </div>
+      </>
     );
   }
 
