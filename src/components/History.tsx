@@ -152,21 +152,18 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
 
   if (timeEntries.length === 0) {
     return (
-      <div className="w-full p-4">
-        <div className="bg-red-500 text-white p-4 mb-4 text-center text-xl font-bold">
-          TEST: Du siehst mich? (Keine Einträge)
-        </div>
-        <Button 
-          onClick={openAddDialog} 
-          className="w-full mb-4 h-14 text-lg font-bold bg-green-500 hover:bg-green-600"
-          size="lg"
-        >
-          <Plus className="h-6 w-6" />
-          Neuen Tag hinzufügen
-        </Button>
+      <div className="w-full">
         <div className="p-6 text-center">
-          <p className="text-muted-foreground">Du hast noch keine abgeschlossenen Zeiteinträge.</p>
-          <p className="text-muted-foreground/70 mt-2 text-sm">
+          <p className="text-muted-foreground mb-4">Du hast noch keine abgeschlossenen Zeiteinträge.</p>
+          <Button 
+            onClick={openAddDialog} 
+            className="w-full h-14 text-lg font-bold"
+            size="lg"
+          >
+            <Plus className="h-6 w-6" />
+            Neuen Tag hinzufügen
+          </Button>
+          <p className="text-muted-foreground/70 mt-4 text-sm">
             Schließe einen Arbeitstag über das Dashboard ab oder füge manuell einen Tag hinzu.
           </p>
         </div>
@@ -175,7 +172,7 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
   }
 
   return (
-    <div className="w-full p-4">
+    <div className="w-full">
       <div className="bg-blue-500 text-white p-4 mb-4 text-center text-xl font-bold">
         TEST: Du siehst mich? (Mit Einträgen: {timeEntries.length})
       </div>
