@@ -153,9 +153,9 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
   if (timeEntries.length === 0) {
     return (
       <>
-        <div className="sticky top-0 z-10 bg-background pb-4 pt-2">
-          <Button onClick={openAddDialog} className="w-full gap-2">
-            <Plus className="h-4 w-4" />
+        <div className="mb-4">
+          <Button onClick={openAddDialog} className="w-full gap-2 h-12 text-base font-semibold">
+            <Plus className="h-5 w-5" />
             Neuen Tag hinzufügen
           </Button>
         </div>
@@ -172,9 +172,9 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
   return (
     <>
       <div className="space-y-4">
-        <div className="sticky top-0 z-10 bg-background pb-4 pt-2">
-          <Button onClick={openAddDialog} className="w-full gap-2">
-            <Plus className="h-4 w-4" />
+        <div className="mb-4">
+          <Button onClick={openAddDialog} className="w-full gap-2 h-12 text-base font-semibold">
+            <Plus className="h-5 w-5" />
             Neuen Tag hinzufügen
           </Button>
         </div>
