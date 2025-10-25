@@ -61,7 +61,8 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
 
   const updateBreak = (index: number, field: 'start' | 'end', value: string) => {
     const newBreaks = [...breaks];
-    newBreaks[index] = { ...newBreaks[index], [field]: value ? new Date(value).toISOString() : null };
+    // datetime-local gibt bereits lokale Zeit zurück, wir müssen nur ":00.000Z" anhängen
+    newBreaks[index] = { ...newBreaks[index], [field]: value ? value + ':00.000Z' : null };
     setBreaks(newBreaks);
   };
 
@@ -70,8 +71,9 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
       console.log('saveEntry started, isAddingNew:', isAddingNew);
       console.log('startTime:', startTime, 'endTime:', endTime, 'breaks:', breaks);
       
-      const startISO = new Date(startTime).toISOString();
-      const endISO = new Date(endTime).toISOString();
+      // datetime-local gibt bereits lokale Zeit zurück
+      const startISO = startTime + ':00.000Z';
+      const endISO = endTime + ':00.000Z';
 
       const { netMinutes, totalBreakMs } = calculateNetWorkDuration(startISO, endISO, breaks);
       const surcharge = calculateSurcharge(startISO, netMinutes, customHolidays);
