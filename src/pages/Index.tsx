@@ -5,13 +5,14 @@ import { Dashboard } from '@/components/Dashboard';
 import { History } from '@/components/History';
 import { Settings } from '@/components/Settings';
 import { Absences } from '@/components/Absences';
+import { CalendarView } from '@/components/CalendarView';
 import { useTimeTracking } from '@/hooks/useTimeTracking';
 import { useAbsences } from '@/hooks/useAbsences';
 import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'history' | 'absences' | 'settings'>('dashboard');
+  const [currentPage, setCurrentPage] = useState<'dashboard' | 'history' | 'absences' | 'calendar' | 'settings'>('dashboard');
   
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -63,7 +64,7 @@ const Index = () => {
         </header>
 
         <nav className="bg-card p-2 rounded-xl mb-6 shadow-xl border border-border">
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-5 gap-1">
             <button
               onClick={() => setCurrentPage('dashboard')}
               className={`p-3 text-xs font-semibold rounded-lg transition-all ${
@@ -93,6 +94,16 @@ const Index = () => {
               }`}
             >
               Abwesenheit
+            </button>
+            <button
+              onClick={() => setCurrentPage('calendar')}
+              className={`p-3 text-xs font-semibold rounded-lg transition-all ${
+                currentPage === 'calendar'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Kalender
             </button>
             <button
               onClick={() => setCurrentPage('settings')}
@@ -126,6 +137,12 @@ const Index = () => {
           )}
           {currentPage === 'absences' && (
             <Absences absences={absences} />
+          )}
+          {currentPage === 'calendar' && (
+            <CalendarView 
+              timeEntries={timeEntries}
+              absences={absences}
+            />
           )}
           {currentPage === 'settings' && settings && (
             <Settings settings={settings} userId={user.id} />
