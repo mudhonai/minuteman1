@@ -67,6 +67,9 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
 
   const saveEntry = async () => {
     try {
+      console.log('saveEntry started, isAddingNew:', isAddingNew);
+      console.log('startTime:', startTime, 'endTime:', endTime, 'breaks:', breaks);
+      
       const startISO = new Date(startTime).toISOString();
       const endISO = new Date(endTime).toISOString();
 
@@ -74,6 +77,7 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
       const surcharge = calculateSurcharge(startISO, netMinutes, customHolidays);
 
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('User:', user);
       if (!user) throw new Error('Nicht angemeldet');
 
       const entryData = {
@@ -90,17 +94,23 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
         date: new Date(startISO).toISOString().split('T')[0],
       };
 
+      console.log('entryData:', entryData);
+
       if (isAddingNew) {
-        const { error } = await supabase
+        console.log('Inserting new entry...');
+        const { error, data } = await supabase
           .from('time_entries')
           .insert({
             ...entryData,
             user_id: user.id,
-          });
+          })
+          .select();
 
+        console.log('Insert result:', { error, data });
         if (error) throw error;
         toast.success('Neuer Eintrag erfolgreich erstellt');
       } else if (editingEntry) {
+        console.log('Updating existing entry...');
         const { error } = await supabase
           .from('time_entries')
           .update(entryData)
@@ -113,7 +123,7 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
       closeEditDialog();
     } catch (error: any) {
       console.error('Error saving entry:', error);
-      toast.error('Fehler beim Speichern des Eintrags');
+      toast.error('Fehler beim Speichern des Eintrags: ' + error.message);
     }
   };
 
