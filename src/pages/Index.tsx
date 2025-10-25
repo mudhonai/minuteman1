@@ -55,7 +55,7 @@ const Index = () => {
         <header className="mb-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className="bg-primary/20 p-2 rounded-xl">
+              <div className="bg-primary/20 p-2 rounded-xl border-2 border-primary">
                 <img 
                   src="/pwa-192x192.png" 
                   alt="Minuteman Logo" 
