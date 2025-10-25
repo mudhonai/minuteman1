@@ -1,4 +1,4 @@
-import { Break, SURCHARGE_RATES, NRW_HOLIDAYS_2025 } from './types';
+import { Break, SURCHARGE_RATES, NRW_HOLIDAYS_2025, TARGET_HOURS_DAILY } from './types';
 
 export const formatMinutesToHHMM = (totalMinutes: number | undefined | null): string => {
   if (totalMinutes === undefined || totalMinutes === null || isNaN(totalMinutes)) return '0:00';
@@ -66,19 +66,32 @@ export const calculateSurcharge = (
 
   let rate = 0;
   let label = 'Regulär';
+  let surchargeMinutes = 0;
 
   if (isHol) {
     rate = SURCHARGE_RATES.HOLIDAY;
     label = 'Feiertagszuschlag (130%)';
+    surchargeMinutes = netMinutes;
   } else if (dayOfWeek === 6) {
     rate = SURCHARGE_RATES.SATURDAY;
     label = 'Samstagszuschlag (30%)';
+    surchargeMinutes = netMinutes;
   } else if (dayOfWeek === 0) {
     rate = SURCHARGE_RATES.SUNDAY;
     label = 'Sonntagszuschlag (60%)';
+    surchargeMinutes = netMinutes;
+  } else if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+    // Montag bis Freitag: Überstunden erhalten 30% Zuschlag
+    const targetMinutes = TARGET_HOURS_DAILY[dayOfWeek] || 0;
+    const overtimeMinutes = Math.max(0, netMinutes - targetMinutes);
+    
+    if (overtimeMinutes > 0) {
+      rate = SURCHARGE_RATES.SATURDAY; // 30%
+      label = 'Überstundenzuschlag (30%)';
+      surchargeMinutes = overtimeMinutes;
+    }
   }
 
-  const surchargeMinutes = rate > 0 ? netMinutes : 0;
   const surchargeAmount = Math.round(surchargeMinutes * rate);
 
   return {
