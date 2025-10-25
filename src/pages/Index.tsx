@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthForm } from '@/components/AuthForm';
 import { Dashboard } from '@/components/Dashboard';
@@ -54,9 +55,14 @@ const Index = () => {
       <div className="max-w-lg mx-auto p-4 md:p-6">
         <header className="mb-6">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-4xl font-extrabold text-accent">Minuteman</h1>
-              <p className="text-sm text-muted-foreground">IchWarDa - Dein Zeiterfassungs-Terminal</p>
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/20 p-3 rounded-xl">
+                <Clock className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-extrabold text-accent">Minuteman</h1>
+                <p className="text-sm text-muted-foreground">IchWarDa - Dein Zeiterfassungs-Terminal</p>
+              </div>
             </div>
             <Button onClick={handleSignOut} variant="ghost" size="sm">
               Abmelden
