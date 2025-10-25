@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CurrentEntry, TimeEntry, AbsenceEntry, TARGET_HOURS_DAILY, TARGET_HOURS_WEEKLY, TARGET_HOURS_MONTHLY } from '@/lib/types';
 import { formatMinutesToHHMM, formatGermanDateTime, calculateNetWorkDuration } from '@/lib/timeUtils';
+import { generatePDFReport } from '@/lib/pdfExport';
 import { useWorkActions } from '@/hooks/useWorkActions';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { toast } from 'sonner';
+import { Download } from 'lucide-react';
 
 interface DashboardProps {
   currentEntry: CurrentEntry | null;
@@ -19,6 +20,7 @@ interface DashboardProps {
 
 export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId, customHolidays }: DashboardProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [pdfPeriod, setPdfPeriod] = useState<'week' | 'month' | 'year'>('month');
   const { startWork, startBreak, endBreak, endWork } = useWorkActions(userId, customHolidays);
 
   useEffect(() => {
@@ -157,28 +159,26 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
   };
 
   const exportPDF = async () => {
-    const element = document.getElementById('report-container');
-    if (!element) return;
-
     try {
       toast.info('PDF wird erstellt...');
-      const canvas = await html2canvas(element, { scale: 2 });
-      const imgData = canvas.toDataURL('image/png');
+      const pdf = await generatePDFReport({
+        timeEntries,
+        absences,
+        currentEntry: currentEntry || undefined,
+        period: pdfPeriod,
+      });
       
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Arbeitszeitbericht_${new Date().toISOString().split('T')[0]}.pdf`);
+      const periodLabel = pdfPeriod === 'week' ? 'Woche' : pdfPeriod === 'month' ? 'Monat' : 'Jahr';
+      pdf.save(`Arbeitszeitbericht_${periodLabel}_${new Date().toISOString().split('T')[0]}.pdf`);
       toast.success('PDF erfolgreich exportiert!');
     } catch (error) {
+      console.error('PDF Export Error:', error);
       toast.error('Fehler beim Exportieren des PDFs');
     }
   };
 
   return (
-    <div id="report-container" className="space-y-6">
+    <div className="space-y-6">{/* removed id="report-container" */}
       {/* Status Card */}
       <Card className={`p-4 ${getStatusCardClass()} border-2 shadow-lg transition-all`}>
         <h2 className="text-xl font-bold">{getStatusText()}</h2>
@@ -288,10 +288,26 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
           </Card>
         </div>
       </div>
-
-      <Button onClick={exportPDF} className="w-full bg-green-600 hover:bg-green-700">
-        Arbeitszeitbericht als PDF exportieren
-      </Button>
+      {/* Export Section */}
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold">PDF Export</h2>
+        <div className="flex gap-2">
+          <Select value={pdfPeriod} onValueChange={(v: any) => setPdfPeriod(v)}>
+            <SelectTrigger className="flex-1">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="week">Diese Woche</SelectItem>
+              <SelectItem value="month">Dieser Monat</SelectItem>
+              <SelectItem value="year">Dieses Jahr</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={exportPDF} className="gap-2">
+            <Download className="h-4 w-4" />
+            PDF Export
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
