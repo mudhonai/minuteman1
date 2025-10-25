@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthForm } from '@/components/AuthForm';
 import { Dashboard } from '@/components/Dashboard';
@@ -56,8 +55,12 @@ const Index = () => {
         <header className="mb-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className="bg-primary/20 p-3 rounded-xl">
-                <Clock className="h-8 w-8 text-primary" />
+              <div className="bg-primary/20 p-2 rounded-xl">
+                <img 
+                  src="/pwa-192x192.png" 
+                  alt="Minuteman Logo" 
+                  className="h-10 w-10"
+                />
               </div>
               <div>
                 <h1 className="text-4xl font-extrabold text-accent">Minuteman</h1>
