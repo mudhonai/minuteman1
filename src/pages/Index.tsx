@@ -6,13 +6,14 @@ import { History } from '@/components/History';
 import { Settings } from '@/components/Settings';
 import { Absences } from '@/components/Absences';
 import { CalendarView } from '@/components/CalendarView';
+import { Statistics } from '@/components/Statistics';
 import { useTimeTracking } from '@/hooks/useTimeTracking';
 import { useAbsences } from '@/hooks/useAbsences';
 import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'history' | 'absences' | 'calendar' | 'settings'>('dashboard');
+  const [currentPage, setCurrentPage] = useState<'dashboard' | 'history' | 'absences' | 'calendar' | 'statistics' | 'settings'>('dashboard');
   
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -63,11 +64,11 @@ const Index = () => {
           </div>
         </header>
 
-        <nav className="bg-card p-2 rounded-xl mb-6 shadow-xl border border-border">
-          <div className="grid grid-cols-5 gap-1">
+        <nav className="bg-card p-2 rounded-xl mb-6 shadow-xl border border-border overflow-x-auto">
+          <div className="flex gap-1 min-w-max">
             <button
               onClick={() => setCurrentPage('dashboard')}
-              className={`p-3 text-xs font-semibold rounded-lg transition-all ${
+              className={`px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
                 currentPage === 'dashboard'
                   ? 'bg-primary text-primary-foreground shadow-lg'
                   : 'bg-transparent text-muted-foreground hover:text-foreground'
@@ -77,7 +78,7 @@ const Index = () => {
             </button>
             <button
               onClick={() => setCurrentPage('history')}
-              className={`p-3 text-xs font-semibold rounded-lg transition-all ${
+              className={`px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
                 currentPage === 'history'
                   ? 'bg-primary text-primary-foreground shadow-lg'
                   : 'bg-transparent text-muted-foreground hover:text-foreground'
@@ -87,7 +88,7 @@ const Index = () => {
             </button>
             <button
               onClick={() => setCurrentPage('absences')}
-              className={`p-3 text-xs font-semibold rounded-lg transition-all ${
+              className={`px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
                 currentPage === 'absences'
                   ? 'bg-primary text-primary-foreground shadow-lg'
                   : 'bg-transparent text-muted-foreground hover:text-foreground'
@@ -97,7 +98,7 @@ const Index = () => {
             </button>
             <button
               onClick={() => setCurrentPage('calendar')}
-              className={`p-3 text-xs font-semibold rounded-lg transition-all ${
+              className={`px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
                 currentPage === 'calendar'
                   ? 'bg-primary text-primary-foreground shadow-lg'
                   : 'bg-transparent text-muted-foreground hover:text-foreground'
@@ -106,8 +107,18 @@ const Index = () => {
               Kalender
             </button>
             <button
+              onClick={() => setCurrentPage('statistics')}
+              className={`px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
+                currentPage === 'statistics'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Statistik
+            </button>
+            <button
               onClick={() => setCurrentPage('settings')}
-              className={`p-3 text-xs font-semibold rounded-lg transition-all ${
+              className={`px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
                 currentPage === 'settings'
                   ? 'bg-primary text-primary-foreground shadow-lg'
                   : 'bg-transparent text-muted-foreground hover:text-foreground'
@@ -140,6 +151,12 @@ const Index = () => {
           )}
           {currentPage === 'calendar' && (
             <CalendarView 
+              timeEntries={timeEntries}
+              absences={absences}
+            />
+          )}
+          {currentPage === 'statistics' && (
+            <Statistics
               timeEntries={timeEntries}
               absences={absences}
             />
