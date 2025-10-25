@@ -119,7 +119,11 @@ export const useWorkActions = (userId: string | undefined, customHolidays: strin
           net_work_duration_minutes: netMinutes,
           total_break_duration_ms: totalBreakMs,
           date: new Date(currentEntry.start_time).toISOString().split('T')[0],
-          ...surchargeData
+          regular_minutes: surchargeData.regularMinutes,
+          surcharge_minutes: surchargeData.surchargeMinutes,
+          surcharge_amount: surchargeData.surchargeAmount,
+          is_surcharge_day: surchargeData.isSurchargeDay,
+          surcharge_label: surchargeData.surchargeLabel,
         });
 
       if (insertError) throw insertError;
