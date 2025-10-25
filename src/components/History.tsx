@@ -118,22 +118,15 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
   };
 
   const deleteEntry = async (id: string) => {
-    console.log('deleteEntry called with id:', id);
-    
     const confirmed = window.confirm('Möchtest du diesen Eintrag wirklich löschen?');
-    console.log('User confirmed:', confirmed);
     
     if (!confirmed) return;
 
     try {
-      console.log('Attempting to delete entry:', id);
-      const { error, data } = await supabase
+      const { error } = await supabase
         .from('time_entries')
         .delete()
-        .eq('id', id)
-        .select();
-
-      console.log('Delete result:', { error, data });
+        .eq('id', id);
 
       if (error) {
         console.error('Supabase delete error:', error);
