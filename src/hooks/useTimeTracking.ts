@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { CurrentEntry, TimeEntry, UserSettings, WorkStatus } from '@/lib/types';
+import { CurrentEntry, TimeEntry, UserSettings, WorkStatus, Break } from '@/lib/types';
 import { toast } from 'sonner';
 
 export const useTimeTracking = (userId: string | undefined) => {
@@ -24,7 +24,10 @@ export const useTimeTracking = (userId: string | undefined) => {
           .maybeSingle();
 
         if (current) {
-          setCurrentEntry(current as CurrentEntry);
+          setCurrentEntry({
+            ...current,
+            breaks: (current.breaks as any) as Break[]
+          } as CurrentEntry);
           setStatus(current.status as WorkStatus);
         }
 
@@ -35,7 +38,12 @@ export const useTimeTracking = (userId: string | undefined) => {
           .eq('user_id', userId)
           .order('date', { ascending: false });
 
-        if (entries) setTimeEntries(entries as TimeEntry[]);
+        if (entries) {
+          setTimeEntries(entries.map(e => ({
+            ...e,
+            breaks: (e.breaks as any) as Break[]
+          })) as TimeEntry[]);
+        }
 
         // Load settings
         const { data: userSettings } = await supabase
@@ -90,7 +98,10 @@ export const useTimeTracking = (userId: string | undefined) => {
             setCurrentEntry(null);
             setStatus('idle');
           } else {
-            const entry = payload.new as CurrentEntry;
+            const entry = {
+              ...payload.new,
+              breaks: (payload.new.breaks as any) as Break[]
+            } as CurrentEntry;
             setCurrentEntry(entry);
             setStatus(entry.status);
           }
@@ -116,7 +127,12 @@ export const useTimeTracking = (userId: string | undefined) => {
             .eq('user_id', userId)
             .order('date', { ascending: false });
           
-          if (data) setTimeEntries(data as TimeEntry[]);
+          if (data) {
+            setTimeEntries(data.map(e => ({
+              ...e,
+              breaks: (e.breaks as any) as Break[]
+            })) as TimeEntry[]);
+          }
         }
       )
       .subscribe();
