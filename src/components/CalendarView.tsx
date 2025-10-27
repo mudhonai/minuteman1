@@ -81,7 +81,10 @@ export const CalendarView = ({ timeEntries, absences }: CalendarViewProps) => {
   };
 
   const createDayData = (date: Date, isCurrentMonth: boolean): DayData => {
-    const dateStr = date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
     const dayOfWeek = date.getDay();
     
     const timeEntry = timeEntries.find(e => e.date === dateStr);
@@ -110,8 +113,9 @@ export const CalendarView = ({ timeEntries, absences }: CalendarViewProps) => {
   const getDayColor = (day: DayData): string => {
     if (!day.isCurrentMonth) return 'bg-muted/30 text-muted-foreground';
     
-    const today = new Date().toISOString().split('T')[0];
-    const isToday = day.date === today;
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const isToday = day.date === todayStr;
     
     if (day.absence) {
       if (day.absence.absence_type === 'urlaub') return isToday ? 'bg-blue-500 text-white' : 'bg-blue-500/20 border-blue-500';
@@ -212,12 +216,16 @@ export const CalendarView = ({ timeEntries, absences }: CalendarViewProps) => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {selectedDay && new Date(selectedDay.date).toLocaleDateString('de-DE', { 
-                weekday: 'long', 
-                day: '2-digit', 
-                month: 'long', 
-                year: 'numeric' 
-              })}
+              {selectedDay && (() => {
+                const [year, month, day] = selectedDay.date.split('-');
+                const localDate = new Date(Number(year), Number(month) - 1, Number(day));
+                return localDate.toLocaleDateString('de-DE', { 
+                  weekday: 'long', 
+                  day: '2-digit', 
+                  month: 'long', 
+                  year: 'numeric' 
+                });
+              })()}
             </DialogTitle>
           </DialogHeader>
           {selectedDay && (
