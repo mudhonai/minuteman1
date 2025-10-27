@@ -1,5 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.1';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 const SURCHARGE_RATES = {
   SATURDAY: 0.30,
   SUNDAY: 0.60,
@@ -90,38 +95,56 @@ const calculateSurcharge = (
 };
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   try {
+    console.log('Starting recalculation...');
+    
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    console.log('Fetching time entries...');
     // Get all time entries
     const { data: entries, error: fetchError } = await supabase
       .from('time_entries')
       .select('*');
 
-    if (fetchError) throw fetchError;
+    if (fetchError) {
+      console.error('Error fetching entries:', fetchError);
+      throw fetchError;
+    }
+
+    console.log(`Found ${entries?.length || 0} entries`);
 
     if (!entries || entries.length === 0) {
       return new Response(
         JSON.stringify({ message: 'Keine Einträge gefunden' }),
-        { headers: { 'Content-Type': 'application/json' } }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    console.log('Fetching user settings...');
     // Get all user settings for custom holidays
     const { data: settings, error: settingsError } = await supabase
       .from('user_settings')
       .select('user_id, custom_holidays');
 
-    if (settingsError) throw settingsError;
+    if (settingsError) {
+      console.error('Error fetching settings:', settingsError);
+      throw settingsError;
+    }
 
     const userHolidays: Record<string, string[]> = {};
     settings?.forEach(s => {
       userHolidays[s.user_id] = (s.custom_holidays as string[]) || [];
     });
 
+    console.log('Recalculating entries...');
     // Recalculate each entry
     const updates = [];
     for (const entry of entries) {
@@ -142,6 +165,7 @@ Deno.serve(async (req) => {
       });
     }
 
+    console.log(`Updating ${updates.length} entries...`);
     // Update all entries
     for (const update of updates) {
       const { error: updateError } = await supabase
@@ -160,12 +184,13 @@ Deno.serve(async (req) => {
       }
     }
 
+    console.log('Recalculation completed successfully');
     return new Response(
       JSON.stringify({ 
         message: `${updates.length} Einträge erfolgreich neu berechnet`,
         updated: updates.length 
       }),
-      { headers: { 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
@@ -173,7 +198,7 @@ Deno.serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return new Response(
       JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
