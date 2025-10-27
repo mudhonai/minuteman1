@@ -190,10 +190,18 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
 
     // Füge liveMinutes nur hinzu, wenn heute der ausgewählte Tag ist UND eine aktive Session läuft
     if (isToday && currentEntry && status !== 'idle') {
+      console.log('🔴 LIVE-MINUTEN HINZUFÜGEN:', liveMinutes, 'Status:', status);
       todayMinutes += liveMinutes;
       weekTotalMinutes += liveMinutes;
       monthTotalMinutes += liveMinutes;
+    } else {
+      console.log('✅ KEINE LIVE-MINUTEN (kein aktiver Eintrag oder nicht heute)');
     }
+
+    console.log('📊 FINALE BERECHNUNG:');
+    console.log('  - Tagesstunden:', todayMinutes, 'min =', formatMinutesToHHMM(todayMinutes));
+    console.log('  - Wochenstunden:', weekTotalMinutes, 'min =', formatMinutesToHHMM(weekTotalMinutes));
+    console.log('  - Monatsstunden:', monthTotalMinutes, 'min =', formatMinutesToHHMM(monthTotalMinutes));
 
     return {
       todayMinutes,
