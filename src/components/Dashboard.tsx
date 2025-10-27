@@ -142,6 +142,13 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     }
   });
 
+  console.log('📊 FINALE WERTE:', { 
+    weekMin, 
+    weekMinFormatted: formatMinutesToHHMM(weekMin),
+    uniqueEntriesCount: unique.length,
+    thisWeekEntries: unique.filter(e => e.date >= mondayStr && e.date <= sundayStr).map(e => ({ date: e.date, min: e.net_work_duration_minutes }))
+  });
+
   const dashboardData = {
     todayMinutes: todayMin,
     todaySurchargeMinutes: todaySurch,
