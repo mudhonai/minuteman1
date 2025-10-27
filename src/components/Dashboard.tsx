@@ -60,25 +60,29 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     return netMinutes;
   }, [currentEntry, currentTime]);
 
-  // Direkte Berechnung ohne useMemo - verhindert Cache-Probleme
-  const now = currentTime;
-  const todayDateStr = selectedDate.toISOString().substring(0, 10);
-  const currentMonthStr = now.toISOString().substring(0, 7);
+  // === WOCHE: Montag 00:00 bis Sonntag 23:59 ===
+  const heute = new Date();
+  heute.setHours(0, 0, 0, 0);
+  const wochentag = heute.getDay(); // 0=So, 1=Mo, ..., 6=Sa
   
-  // Woche: Montag 00:00 bis Sonntag 23:59
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const dayOfWeek = today.getDay();
+  // Montag berechnen
+  const montag = new Date(heute);
+  if (wochentag === 0) {
+    montag.setDate(heute.getDate() - 6); // Sonntag -> zurück zu Montag
+  } else {
+    montag.setDate(heute.getDate() - (wochentag - 1)); // Mo-Sa -> zurück zu Montag
+  }
+  const montagStr = `${montag.getFullYear()}-${String(montag.getMonth() + 1).padStart(2, '0')}-${String(montag.getDate()).padStart(2, '0')}`;
   
-  const mondayOffset = dayOfWeek === 0 ? -6 : -(dayOfWeek - 1);
-  const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() + mondayOffset);
-  const weekStartStr = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
-  
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 6);
-  const weekEndStr = `${weekEnd.getFullYear()}-${String(weekEnd.getMonth() + 1).padStart(2, '0')}-${String(weekEnd.getDate()).padStart(2, '0')}`;
+  // Sonntag berechnen
+  const sonntag = new Date(montag);
+  sonntag.setDate(montag.getDate() + 6);
+  const sonntagStr = `${sonntag.getFullYear()}-${String(sonntag.getMonth() + 1).padStart(2, '0')}-${String(sonntag.getDate()).padStart(2, '0')}`;
 
+  // === BERECHNUNG ===
+  const todayDateStr = selectedDate.toISOString().substring(0, 10);
+  const currentMonthStr = currentTime.toISOString().substring(0, 7);
+  
   let todayMinutes = 0;
   let todaySurchargeMinutes = 0;
   let weekTotalMinutes = 0;
@@ -88,59 +92,56 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
   let monthSurchargeAmount = 0;
   let monthOvertimeMinutes = 0;
 
-  // NUR abgeschlossene DB-Einträge zählen
-  console.log('🔍 STARTE BERECHNUNG - Anzahl timeEntries:', timeEntries.length);
-  console.log('🔍 Wochenbereich:', weekStartStr, 'bis', weekEndStr);
-  
-  timeEntries.forEach(entry => {
-    console.log('  📄 Prüfe Entry:', entry.date, entry.net_work_duration_minutes, 'min');
-    
-    const entryDayOfWeek = new Date(entry.start_time).getDay();
-    const isWeekendOrHoliday = entryDayOfWeek === 0 || entryDayOfWeek === 6 || entry.is_surcharge_day;
-    
-    let overtimeForEntry = 0;
-    if (isWeekendOrHoliday) {
-      overtimeForEntry = entry.net_work_duration_minutes;
-    } else {
-      const targetForDay = TARGET_HOURS_DAILY[entryDayOfWeek] || 0;
-      overtimeForEntry = Math.max(0, entry.net_work_duration_minutes - targetForDay);
-    }
-
+  // Durch alle Einträge gehen
+  for (const entry of timeEntries) {
+    // Heute
     if (entry.date === todayDateStr) {
       todayMinutes += entry.net_work_duration_minutes;
       todaySurchargeMinutes += entry.surcharge_minutes;
-      console.log('    ✅ Heute - todayMinutes jetzt:', todayMinutes);
     }
 
-    if (entry.date >= weekStartStr && entry.date <= weekEndStr) {
+    // Woche (Montag bis Sonntag)
+    if (entry.date >= montagStr && entry.date <= sonntagStr) {
       weekTotalMinutes += entry.net_work_duration_minutes;
       weekSurchargeAmount += entry.surcharge_amount;
-      weekOvertimeMinutes += overtimeForEntry;
-      console.log('    ✅ IN WOCHE - weekTotalMinutes jetzt:', weekTotalMinutes);
-    } else {
-      console.log('    ❌ NICHT in Woche');
+      
+      const entryDayOfWeek = new Date(entry.start_time).getDay();
+      const isWeekendOrHoliday = entryDayOfWeek === 0 || entryDayOfWeek === 6 || entry.is_surcharge_day;
+      if (isWeekendOrHoliday) {
+        weekOvertimeMinutes += entry.net_work_duration_minutes;
+      } else {
+        const targetForDay = TARGET_HOURS_DAILY[entryDayOfWeek] || 0;
+        weekOvertimeMinutes += Math.max(0, entry.net_work_duration_minutes - targetForDay);
+      }
     }
 
+    // Monat
     if (entry.date.startsWith(currentMonthStr)) {
       monthTotalMinutes += entry.net_work_duration_minutes;
       monthSurchargeAmount += entry.surcharge_amount;
-      monthOvertimeMinutes += overtimeForEntry;
+      
+      const entryDayOfWeek = new Date(entry.start_time).getDay();
+      const isWeekendOrHoliday = entryDayOfWeek === 0 || entryDayOfWeek === 6 || entry.is_surcharge_day;
+      if (isWeekendOrHoliday) {
+        monthOvertimeMinutes += entry.net_work_duration_minutes;
+      } else {
+        const targetForDay = TARGET_HOURS_DAILY[entryDayOfWeek] || 0;
+        monthOvertimeMinutes += Math.max(0, entry.net_work_duration_minutes - targetForDay);
+      }
     }
-  });
+  }
 
-  absences.forEach(absence => {
+  // Abwesenheiten
+  for (const absence of absences) {
     const absenceMinutes = absence.hours * 60;
-    const [year, month, day] = absence.date.split('-');
-    const absenceDate = new Date(Number(year), Number(month) - 1, Number(day));
-    const absenceDayOfWeek = absenceDate.getDay();
-
+    
     if (absence.date === todayDateStr) {
       if (absence.absence_type === 'urlaub' || absence.absence_type === 'juep') {
         todayMinutes += absenceMinutes;
       }
     }
 
-    if (absence.date >= weekStartStr && absence.date <= weekEndStr) {
+    if (absence.date >= montagStr && absence.date <= sonntagStr) {
       if (absence.absence_type === 'urlaub') {
         weekTotalMinutes += absenceMinutes;
       } else if (absence.absence_type === 'juep') {
@@ -157,14 +158,10 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
         monthOvertimeMinutes -= absenceMinutes;
       }
     }
-  });
+  }
 
   const todayDayOfWeek = selectedDate.getDay();
   const todayTargetMinutes = TARGET_HOURS_DAILY[todayDayOfWeek] || 0;
-
-  console.log('📊 FINALE WERTE:');
-  console.log('  - weekTotalMinutes:', weekTotalMinutes, '=', formatMinutesToHHMM(weekTotalMinutes));
-  console.log('  - todayMinutes:', todayMinutes, '=', formatMinutesToHHMM(todayMinutes));
 
   const dashboardData = {
     todayMinutes,
