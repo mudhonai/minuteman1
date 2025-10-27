@@ -65,18 +65,16 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     const todayDateStr = selectedDate.toISOString().substring(0, 10);
     const currentMonthStr = now.toISOString().substring(0, 7);
     
-    // Wochenberechnung: Diese Woche Montag 00:00 bis Sonntag 23:59
+    // Woche: Montag 00:00 bis Sonntag 23:59 der aktuellen Woche
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const dayOfWeek = today.getDay(); // 0=Sonntag, 1=Montag, ..., 6=Samstag
+    const dayOfWeek = today.getDay();
     
-    // Montag dieser Woche berechnen
     const mondayOffset = dayOfWeek === 0 ? -6 : -(dayOfWeek - 1);
     const weekStart = new Date(today);
     weekStart.setDate(today.getDate() + mondayOffset);
     const weekStartStr = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
     
-    // Sonntag dieser Woche berechnen
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
     const weekEndStr = `${weekEnd.getFullYear()}-${String(weekEnd.getMonth() + 1).padStart(2, '0')}-${String(weekEnd.getDate()).padStart(2, '0')}`;
@@ -92,7 +90,7 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     let monthOvertimeMinutes = 0;
     let monthTargetMinutes = 0;
 
-    // Process time entries
+    // Process time entries - NUR abgeschlossene Einträge aus der DB
     timeEntries.forEach(entry => {
       const entryDayOfWeek = new Date(entry.start_time).getDay();
       const isWeekendOrHoliday = entryDayOfWeek === 0 || entryDayOfWeek === 6 || entry.is_surcharge_day;
@@ -105,20 +103,17 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
         overtimeForEntry = Math.max(0, entry.net_work_duration_minutes - targetForDay);
       }
 
-      // Heute
       if (entry.date === todayDateStr) {
         todayMinutes += entry.net_work_duration_minutes;
         todaySurchargeMinutes += entry.surcharge_minutes;
       }
 
-      // Woche: Nur Einträge zwischen Montag und Sonntag
       if (entry.date >= weekStartStr && entry.date <= weekEndStr) {
         weekTotalMinutes += entry.net_work_duration_minutes;
         weekSurchargeAmount += entry.surcharge_amount;
         weekOvertimeMinutes += overtimeForEntry;
       }
 
-      // Monat
       if (entry.date.startsWith(currentMonthStr)) {
         monthTotalMinutes += entry.net_work_duration_minutes;
         monthSurchargeAmount += entry.surcharge_amount;
@@ -141,7 +136,6 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
         }
       }
 
-      // Wochenvergleich für Abwesenheiten: Montag bis Sonntag
       if (absence.date >= weekStartStr && absence.date <= weekEndStr) {
         weekTargetMinutes += TARGET_HOURS_DAILY[absenceDayOfWeek] || 0;
         
@@ -149,7 +143,7 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
           weekTotalMinutes += absenceMinutes;
         } else if (absence.absence_type === 'juep') {
           weekTotalMinutes += absenceMinutes;
-          weekOvertimeMinutes -= absenceMinutes; // JÜP reduziert Überstunden
+          weekOvertimeMinutes -= absenceMinutes;
         }
       }
 
@@ -160,29 +154,13 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
           monthTotalMinutes += absenceMinutes;
         } else if (absence.absence_type === 'juep') {
           monthTotalMinutes += absenceMinutes;
-          monthOvertimeMinutes -= absenceMinutes; // JÜP reduziert Überstunden
+          monthOvertimeMinutes -= absenceMinutes;
         }
       }
     });
 
     const todayDayOfWeek = selectedDate.getDay();
     const todayTargetMinutes = TARGET_HOURS_DAILY[todayDayOfWeek] || 0;
-
-    console.log('🔍 DEBUG - weekTotalMinutes VOR liveMinutes:', weekTotalMinutes);
-    console.log('🔍 DEBUG - liveMinutes:', liveMinutes);
-    console.log('🔍 DEBUG - currentEntry:', currentEntry);
-    console.log('🔍 DEBUG - status:', status);
-    console.log('🔍 DEBUG - isToday:', isToday);
-
-    // Füge liveMinutes NUR hinzu, wenn AKTIV eine Session läuft
-    if (isToday && currentEntry && status !== 'idle') {
-      console.log('✅ Live-Session läuft - füge hinzu');
-      todayMinutes += liveMinutes;
-      weekTotalMinutes += liveMinutes;
-      monthTotalMinutes += liveMinutes;
-    }
-
-    console.log('🔍 DEBUG - weekTotalMinutes NACH liveMinutes:', weekTotalMinutes);
 
     return {
       todayMinutes,
@@ -195,7 +173,7 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
       monthOvertime: monthOvertimeMinutes,
       monthSurchargeAmount,
     };
-  }, [currentTime, selectedDate, isToday, timeEntries, absences, liveMinutes]);
+  }, [currentTime, selectedDate, timeEntries, absences]);
 
   const getStatusCardClass = () => {
     if (status === 'working') return 'bg-primary/20 border-primary';
