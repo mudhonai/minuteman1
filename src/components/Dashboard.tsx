@@ -65,13 +65,15 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     const todayDateStr = selectedDate.toISOString().substring(0, 10);
     const currentMonthStr = now.toISOString().substring(0, 7);
     
-    // Wochenstart: Montag 00:01 Uhr
+    // Wochenstart: Montag 00:01 Uhr (lokale Zeit)
     const weekStart = new Date(now);
     weekStart.setDate(weekStart.getDate() - (weekStart.getDay() || 7) + 1);
     weekStart.setHours(0, 1, 0, 0);
+    const weekStartStr = weekStart.toISOString(); // Vergleich mit ISO String
 
-    // Monatsstart: 1. des Monats 00:01 Uhr
+    // Monatsstart: 1. des Monats 00:01 Uhr (lokale Zeit)
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 1, 0, 0);
+    const monthStartStr = monthStart.toISOString(); // Vergleich mit ISO String
 
     let todayMinutes = isToday ? liveMinutes : 0;
     let todaySurchargeMinutes = 0;
@@ -103,8 +105,8 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
         todaySurchargeMinutes += entry.surcharge_minutes;
       }
 
-      const entryDate = new Date(entry.start_time);
-      if (entryDate >= weekStart) {
+      // Wochenvergleich: Nur Einträge ab diesem Montag 00:01 Uhr
+      if (entry.start_time >= weekStartStr) {
         weekTotalMinutes += entry.net_work_duration_minutes;
         weekSurchargeAmount += entry.surcharge_amount;
         weekOvertimeMinutes += overtimeForEntry;
@@ -134,7 +136,9 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
         // Krankheit wird nicht gezählt
       }
 
-      if (absenceDate >= weekStart) {
+      // Wochenvergleich für Abwesenheiten
+      const absenceDateStr = `${year}-${month}-${day}T00:00:00.000Z`;
+      if (absenceDateStr >= weekStartStr.substring(0, 10)) {
         weekTargetMinutes += TARGET_HOURS_DAILY[absenceDayOfWeek] || 0;
         
         if (absence.absence_type === 'urlaub') {
