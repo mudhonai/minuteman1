@@ -38,7 +38,11 @@ export const Statistics = ({ timeEntries, absences }: StatisticsProps) => {
     }
 
     const filteredEntries = timeEntries.filter(e => new Date(e.start_time) >= startDate);
-    const filteredAbsences = absences.filter(a => new Date(a.date) >= startDate);
+    const filteredAbsences = absences.filter(a => {
+      const [year, month, day] = a.date.split('-');
+      const absenceDate = new Date(Number(year), Number(month) - 1, Number(day));
+      return absenceDate >= startDate;
+    });
 
     // Weekly hours data
     const weeklyData: Record<string, { week: string; hours: number; overtime: number; target: number }> = {};

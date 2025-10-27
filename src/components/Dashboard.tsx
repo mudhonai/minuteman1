@@ -93,7 +93,8 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     // Process absences
     absences.forEach(absence => {
       const absenceMinutes = absence.hours * 60;
-      const absenceDate = new Date(absence.date);
+      const [year, month, day] = absence.date.split('-');
+      const absenceDate = new Date(Number(year), Number(month) - 1, Number(day));
       const absenceDayOfWeek = absenceDate.getDay();
 
       if (absence.date === todayDateStr) {

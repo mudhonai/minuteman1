@@ -57,7 +57,8 @@ export const Absences = ({ absences }: AbsencesProps) => {
   const openEditDialog = (entry: AbsenceEntry) => {
     setEditingEntry(entry);
     setIsMultiDay(false);
-    setSingleDate(new Date(entry.date));
+    const [year, month, day] = entry.date.split('-');
+    setSingleDate(new Date(Number(year), Number(month) - 1, Number(day)));
     setDateRange(undefined);
     setAbsenceType(entry.absence_type);
     setHours(entry.hours.toString());
