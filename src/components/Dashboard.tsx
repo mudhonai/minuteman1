@@ -60,134 +60,98 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     return netMinutes;
   }, [currentEntry, currentTime]);
 
-  // === DEDUPLIZIERUNG: Nur eindeutige Einträge verwenden ===
-  const uniqueTimeEntries = timeEntries.filter((entry, index, self) =>
-    index === self.findIndex(e => e.id === entry.id)
-  );
+  // === SIMPLE WOCHENBERECHNUNG ===
+  const getMonday = () => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    const day = d.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + diff);
+    return d;
+  };
 
-  console.log('🔴 ORIGINAL timeEntries:', timeEntries.length);
-  console.log('🔴 UNIQUE timeEntries:', uniqueTimeEntries.length);
-  console.log('🔴 Einträge für diese Woche:', uniqueTimeEntries.filter(e => e.date >= '2025-10-27' && e.date <= '2025-11-02').map(e => ({ date: e.date, min: e.net_work_duration_minutes, id: e.id.substring(0, 8) })));
-
-  // === WOCHE: Montag 00:00 bis Sonntag 23:59 ===
-  const heute = new Date();
-  heute.setHours(0, 0, 0, 0);
-  const wochentag = heute.getDay(); // 0=So, 1=Mo, ..., 6=Sa
+  const monday = getMonday();
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
   
-  // Montag berechnen
-  const montag = new Date(heute);
-  if (wochentag === 0) {
-    montag.setDate(heute.getDate() - 6); // Sonntag -> zurück zu Montag
-  } else {
-    montag.setDate(heute.getDate() - (wochentag - 1)); // Mo-Sa -> zurück zu Montag
-  }
-  const montagStr = `${montag.getFullYear()}-${String(montag.getMonth() + 1).padStart(2, '0')}-${String(montag.getDate()).padStart(2, '0')}`;
-  
-  // Sonntag berechnen
-  const sonntag = new Date(montag);
-  sonntag.setDate(montag.getDate() + 6);
-  const sonntagStr = `${sonntag.getFullYear()}-${String(sonntag.getMonth() + 1).padStart(2, '0')}-${String(sonntag.getDate()).padStart(2, '0')}`;
+  const formatDate = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
 
-  console.log('🔴 WOCHE:', montagStr, 'bis', sonntagStr);
+  const mondayStr = formatDate(monday);
+  const sundayStr = formatDate(sunday);
+  const todayStr = selectedDate.toISOString().substring(0, 10);
+  const monthStr = currentTime.toISOString().substring(0, 7);
 
-  // === BERECHNUNG ===
-  const todayDateStr = selectedDate.toISOString().substring(0, 10);
-  const currentMonthStr = currentTime.toISOString().substring(0, 7);
-  
-  let todayMinutes = 0;
-  let todaySurchargeMinutes = 0;
-  let weekTotalMinutes = 0;
-  let weekSurchargeAmount = 0;
-  let weekOvertimeMinutes = 0;
-  let monthTotalMinutes = 0;
-  let monthSurchargeAmount = 0;
-  let monthOvertimeMinutes = 0;
+  // Deduplizierung
+  const seen = new Set();
+  const unique = timeEntries.filter(e => {
+    if (seen.has(e.id)) return false;
+    seen.add(e.id);
+    return true;
+  });
 
-  // Durch alle EINDEUTIGEN Einträge gehen
-  for (const entry of uniqueTimeEntries) {
-    // Heute
-    if (entry.date === todayDateStr) {
-      todayMinutes += entry.net_work_duration_minutes;
-      todaySurchargeMinutes += entry.surcharge_minutes;
+  // Berechnung
+  let todayMin = 0, todaySurch = 0;
+  let weekMin = 0, weekSurch = 0, weekOT = 0;
+  let monthMin = 0, monthSurch = 0, monthOT = 0;
+
+  unique.forEach(e => {
+    if (e.date === todayStr) {
+      todayMin += e.net_work_duration_minutes;
+      todaySurch += e.surcharge_minutes;
     }
-
-    // Woche (Montag bis Sonntag)
-    if (entry.date >= montagStr && entry.date <= sonntagStr) {
-      console.log('  ✅ WOCHE +', entry.date, entry.net_work_duration_minutes, 'min, ID:', entry.id.substring(0, 8));
-      weekTotalMinutes += entry.net_work_duration_minutes;
-      weekSurchargeAmount += entry.surcharge_amount;
-      
-      const entryDayOfWeek = new Date(entry.start_time).getDay();
-      const isWeekendOrHoliday = entryDayOfWeek === 0 || entryDayOfWeek === 6 || entry.is_surcharge_day;
-      if (isWeekendOrHoliday) {
-        weekOvertimeMinutes += entry.net_work_duration_minutes;
-      } else {
-        const targetForDay = TARGET_HOURS_DAILY[entryDayOfWeek] || 0;
-        weekOvertimeMinutes += Math.max(0, entry.net_work_duration_minutes - targetForDay);
-      }
-      console.log('  → weekTotalMinutes jetzt:', weekTotalMinutes);
-    }
-
-    // Monat
-    if (entry.date.startsWith(currentMonthStr)) {
-      monthTotalMinutes += entry.net_work_duration_minutes;
-      monthSurchargeAmount += entry.surcharge_amount;
-      
-      const entryDayOfWeek = new Date(entry.start_time).getDay();
-      const isWeekendOrHoliday = entryDayOfWeek === 0 || entryDayOfWeek === 6 || entry.is_surcharge_day;
-      if (isWeekendOrHoliday) {
-        monthOvertimeMinutes += entry.net_work_duration_minutes;
-      } else {
-        const targetForDay = TARGET_HOURS_DAILY[entryDayOfWeek] || 0;
-        monthOvertimeMinutes += Math.max(0, entry.net_work_duration_minutes - targetForDay);
-      }
-    }
-  }
-
-  // Abwesenheiten
-  for (const absence of absences) {
-    const absenceMinutes = absence.hours * 60;
     
-    if (absence.date === todayDateStr) {
-      if (absence.absence_type === 'urlaub' || absence.absence_type === 'juep') {
-        todayMinutes += absenceMinutes;
-      }
+    if (e.date >= mondayStr && e.date <= sundayStr) {
+      weekMin += e.net_work_duration_minutes;
+      weekSurch += e.surcharge_amount;
+      
+      const dow = new Date(e.start_time).getDay();
+      const isWE = dow === 0 || dow === 6 || e.is_surcharge_day;
+      weekOT += isWE ? e.net_work_duration_minutes : Math.max(0, e.net_work_duration_minutes - (TARGET_HOURS_DAILY[dow] || 0));
     }
-
-    if (absence.date >= montagStr && absence.date <= sonntagStr) {
-      if (absence.absence_type === 'urlaub') {
-        weekTotalMinutes += absenceMinutes;
-      } else if (absence.absence_type === 'juep') {
-        weekTotalMinutes += absenceMinutes;
-        weekOvertimeMinutes -= absenceMinutes;
-      }
+    
+    if (e.date.startsWith(monthStr)) {
+      monthMin += e.net_work_duration_minutes;
+      monthSurch += e.surcharge_amount;
+      
+      const dow = new Date(e.start_time).getDay();
+      const isWE = dow === 0 || dow === 6 || e.is_surcharge_day;
+      monthOT += isWE ? e.net_work_duration_minutes : Math.max(0, e.net_work_duration_minutes - (TARGET_HOURS_DAILY[dow] || 0));
     }
+  });
 
-    if (absence.date.startsWith(currentMonthStr)) {
-      if (absence.absence_type === 'urlaub') {
-        monthTotalMinutes += absenceMinutes;
-      } else if (absence.absence_type === 'juep') {
-        monthTotalMinutes += absenceMinutes;
-        monthOvertimeMinutes -= absenceMinutes;
-      }
+  absences.forEach(a => {
+    const aMin = a.hours * 60;
+    
+    if (a.date === todayStr && (a.absence_type === 'urlaub' || a.absence_type === 'juep')) {
+      todayMin += aMin;
     }
-  }
-
-  const todayDayOfWeek = selectedDate.getDay();
-  const todayTargetMinutes = TARGET_HOURS_DAILY[todayDayOfWeek] || 0;
-
-  console.log('🔴 FINALE BERECHNUNG - weekTotalMinutes:', weekTotalMinutes, '=', formatMinutesToHHMM(weekTotalMinutes));
+    
+    if (a.date >= mondayStr && a.date <= sundayStr) {
+      if (a.absence_type === 'urlaub') weekMin += aMin;
+      else if (a.absence_type === 'juep') { weekMin += aMin; weekOT -= aMin; }
+    }
+    
+    if (a.date.startsWith(monthStr)) {
+      if (a.absence_type === 'urlaub') monthMin += aMin;
+      else if (a.absence_type === 'juep') { monthMin += aMin; monthOT -= aMin; }
+    }
+  });
 
   const dashboardData = {
-    todayMinutes,
-    todaySurchargeMinutes,
-    todayTargetMinutes,
-    weekTotal: weekTotalMinutes,
-    weekOvertime: weekOvertimeMinutes,
-    weekSurchargeAmount,
-    monthTotal: monthTotalMinutes,
-    monthOvertime: monthOvertimeMinutes,
-    monthSurchargeAmount,
+    todayMinutes: todayMin,
+    todaySurchargeMinutes: todaySurch,
+    todayTargetMinutes: TARGET_HOURS_DAILY[selectedDate.getDay()] || 0,
+    weekTotal: weekMin,
+    weekOvertime: weekOT,
+    weekSurchargeAmount: weekSurch,
+    monthTotal: monthMin,
+    monthOvertime: monthOT,
+    monthSurchargeAmount: monthSurch,
   };
 
   const getStatusCardClass = () => {
