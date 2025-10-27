@@ -89,7 +89,12 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
   let monthOvertimeMinutes = 0;
 
   // NUR abgeschlossene DB-Einträge zählen
+  console.log('🔍 STARTE BERECHNUNG - Anzahl timeEntries:', timeEntries.length);
+  console.log('🔍 Wochenbereich:', weekStartStr, 'bis', weekEndStr);
+  
   timeEntries.forEach(entry => {
+    console.log('  📄 Prüfe Entry:', entry.date, entry.net_work_duration_minutes, 'min');
+    
     const entryDayOfWeek = new Date(entry.start_time).getDay();
     const isWeekendOrHoliday = entryDayOfWeek === 0 || entryDayOfWeek === 6 || entry.is_surcharge_day;
     
@@ -104,12 +109,16 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     if (entry.date === todayDateStr) {
       todayMinutes += entry.net_work_duration_minutes;
       todaySurchargeMinutes += entry.surcharge_minutes;
+      console.log('    ✅ Heute - todayMinutes jetzt:', todayMinutes);
     }
 
     if (entry.date >= weekStartStr && entry.date <= weekEndStr) {
       weekTotalMinutes += entry.net_work_duration_minutes;
       weekSurchargeAmount += entry.surcharge_amount;
       weekOvertimeMinutes += overtimeForEntry;
+      console.log('    ✅ IN WOCHE - weekTotalMinutes jetzt:', weekTotalMinutes);
+    } else {
+      console.log('    ❌ NICHT in Woche');
     }
 
     if (entry.date.startsWith(currentMonthStr)) {
@@ -152,6 +161,10 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
 
   const todayDayOfWeek = selectedDate.getDay();
   const todayTargetMinutes = TARGET_HOURS_DAILY[todayDayOfWeek] || 0;
+
+  console.log('📊 FINALE WERTE:');
+  console.log('  - weekTotalMinutes:', weekTotalMinutes, '=', formatMinutesToHHMM(weekTotalMinutes));
+  console.log('  - todayMinutes:', todayMinutes, '=', formatMinutesToHHMM(todayMinutes));
 
   const dashboardData = {
     todayMinutes,
