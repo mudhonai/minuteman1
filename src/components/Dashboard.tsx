@@ -66,18 +66,27 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     const currentMonthStr = now.toISOString().substring(0, 7);
     
     // Wochenstart: Montag dieser Woche um 00:01 Uhr
-    const weekStart = new Date(now);
-    const currentDayOfWeek = weekStart.getDay();
-    const daysToMonday = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1; // Sonntag = 6 Tage zurück
-    weekStart.setDate(weekStart.getDate() - daysToMonday);
-    weekStart.setHours(0, 1, 0, 0);
-    const weekStartDateStr = weekStart.toISOString().substring(0, 10); // Nur Datum: 2025-10-27
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    const currentDayOfWeek = today.getDay();
     
-    // Wochenende: Sonntag dieser Woche um 23:59 Uhr
+    // Berechne den Montag dieser Woche
+    const weekStart = new Date(today);
+    if (currentDayOfWeek === 0) {
+      // Sonntag - gehe 6 Tage zurück zum Montag
+      weekStart.setDate(weekStart.getDate() - 6);
+    } else {
+      // Mo-Sa - gehe zurück zum Montag
+      weekStart.setDate(weekStart.getDate() - (currentDayOfWeek - 1));
+    }
+    const weekStartDateStr = weekStart.toISOString().substring(0, 10);
+    
+    // Wochenende: Sonntag dieser Woche
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6); // +6 Tage = Sonntag
-    weekEnd.setHours(23, 59, 59, 999);
-    const weekEndDateStr = weekEnd.toISOString().substring(0, 10); // Nur Datum
+    const weekEndDateStr = weekEnd.toISOString().substring(0, 10);
+    
+    console.log('Woche:', weekStartDateStr, 'bis', weekEndDateStr);
 
     // Monatsstart: 1. des Monats 00:01 Uhr
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 1, 0, 0);
@@ -115,9 +124,12 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
 
       // Wochenvergleich: Montag bis Sonntag dieser Woche
       if (entry.date >= weekStartDateStr && entry.date <= weekEndDateStr) {
+        console.log('Woche +', entry.date, entry.net_work_duration_minutes, 'min');
         weekTotalMinutes += entry.net_work_duration_minutes;
         weekSurchargeAmount += entry.surcharge_amount;
         weekOvertimeMinutes += overtimeForEntry;
+      } else {
+        console.log('Woche SKIP', entry.date);
       }
       if (entry.date.startsWith(currentMonthStr)) {
         monthTotalMinutes += entry.net_work_duration_minutes;
