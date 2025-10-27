@@ -118,7 +118,7 @@ export const CalendarView = ({ timeEntries, absences }: CalendarViewProps) => {
     const isToday = day.date === todayStr;
     
     if (day.absence) {
-      if (day.absence.absence_type === 'urlaub') return isToday ? 'bg-purple-500 text-white' : 'bg-purple-500/20 border-purple-500';
+      if (day.absence.absence_type === 'urlaub') return isToday ? 'bg-cyan-500 text-white' : 'bg-cyan-500/20 border-cyan-500';
       if (day.absence.absence_type === 'juep') return isToday ? 'bg-green-500 text-white' : 'bg-green-500/20 border-green-500';
       if (day.absence.absence_type === 'krankheit') return isToday ? 'bg-red-500 text-white' : 'bg-red-500/20 border-red-500';
     }
@@ -168,7 +168,7 @@ export const CalendarView = ({ timeEntries, absences }: CalendarViewProps) => {
           <span>Arbeit (Normal)</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-purple-500/20 border border-purple-500 rounded" />
+          <div className="w-3 h-3 bg-cyan-500/20 border border-cyan-500 rounded" />
           <span>Urlaub</span>
         </div>
         <div className="flex items-center gap-1">
