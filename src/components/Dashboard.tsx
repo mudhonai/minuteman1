@@ -65,38 +65,24 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     const todayDateStr = selectedDate.toISOString().substring(0, 10);
     const currentMonthStr = now.toISOString().substring(0, 7);
     
-    // Wochenstart: Immer Montag der AKTUELLEN Woche (nicht selectedDate!)
-    const nowLocal = new Date();
-    nowLocal.setHours(0, 0, 0, 0);
-    const nowDayOfWeek = nowLocal.getDay(); // 0=Sonntag, 1=Montag, ..., 6=Samstag
+    // Wochenberechnung: Diese Woche Montag 00:00 bis Sonntag 23:59
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayOfWeek = today.getDay(); // 0=Sonntag, 1=Montag, ..., 6=Samstag
     
-    const weekStart = new Date(nowLocal);
-    if (nowDayOfWeek === 0) {
-      // Sonntag: gehe 6 Tage zurück zum Montag
-      weekStart.setDate(weekStart.getDate() - 6);
-    } else {
-      // Montag-Samstag: gehe zurück zum Montag
-      weekStart.setDate(weekStart.getDate() - (nowDayOfWeek - 1));
-    }
-    weekStart.setHours(0, 0, 0, 0);
-    // WICHTIG: Lokales Datum verwenden, nicht UTC!
-    const weekStartDateStr = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
+    // Montag dieser Woche berechnen
+    const mondayOffset = dayOfWeek === 0 ? -6 : -(dayOfWeek - 1);
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() + mondayOffset);
+    const weekStartStr = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
     
-    // Wochenende: Sonntag dieser Woche
+    // Sonntag dieser Woche berechnen
     const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-    weekEnd.setHours(23, 59, 59, 999);
-    // WICHTIG: Lokales Datum verwenden, nicht UTC!
-    const weekEndDateStr = `${weekEnd.getFullYear()}-${String(weekEnd.getMonth() + 1).padStart(2, '0')}-${String(weekEnd.getDate()).padStart(2, '0')}`;
+    weekEnd.setDate(weekStart.getDate() + 6);
+    const weekEndStr = `${weekEnd.getFullYear()}-${String(weekEnd.getMonth() + 1).padStart(2, '0')}-${String(weekEnd.getDate()).padStart(2, '0')}`;
     
-    console.log('Woche:', weekStartDateStr, 'bis', weekEndDateStr);
+    console.log('📅 Wochenbereich:', weekStartStr, 'bis', weekEndStr);
 
-    // Monatsstart: 1. des Monats 00:01 Uhr
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 1, 0, 0);
-    const monthStartDateStr = monthStart.toISOString().substring(0, 7); // Nur Jahr-Monat: 2025-10
-
-    // WICHTIG: liveMinutes nicht hier initialisieren, sonst Doppelzählung!
-    // liveMinutes wird nur für die aktuelle Live-Anzeige verwendet, nicht für abgeschlossene Einträge
     let todayMinutes = 0;
     let todaySurchargeMinutes = 0;
     let weekTotalMinutes = 0;
@@ -113,7 +99,6 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
       const entryDayOfWeek = new Date(entry.start_time).getDay();
       const isWeekendOrHoliday = entryDayOfWeek === 0 || entryDayOfWeek === 6 || entry.is_surcharge_day;
       
-      // Für Wochenenden/Feiertage zählen alle Minuten als Überstunden
       let overtimeForEntry = 0;
       if (isWeekendOrHoliday) {
         overtimeForEntry = entry.net_work_duration_minutes;
@@ -122,20 +107,21 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
         overtimeForEntry = Math.max(0, entry.net_work_duration_minutes - targetForDay);
       }
 
+      // Heute
       if (entry.date === todayDateStr) {
         todayMinutes += entry.net_work_duration_minutes;
         todaySurchargeMinutes += entry.surcharge_minutes;
       }
 
-      // Wochenvergleich: Montag bis Sonntag dieser Woche
-      if (entry.date >= weekStartDateStr && entry.date <= weekEndDateStr) {
-        console.log('Woche +', entry.date, entry.net_work_duration_minutes, 'min');
+      // Woche: Nur Einträge zwischen Montag und Sonntag
+      if (entry.date >= weekStartStr && entry.date <= weekEndStr) {
+        console.log('  ✅ Woche +', entry.date, entry.net_work_duration_minutes, 'min');
         weekTotalMinutes += entry.net_work_duration_minutes;
         weekSurchargeAmount += entry.surcharge_amount;
         weekOvertimeMinutes += overtimeForEntry;
-      } else {
-        console.log('Woche SKIP', entry.date);
       }
+
+      // Monat
       if (entry.date.startsWith(currentMonthStr)) {
         monthTotalMinutes += entry.net_work_duration_minutes;
         monthSurchargeAmount += entry.surcharge_amount;
@@ -152,17 +138,14 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
 
       if (absence.date === todayDateStr) {
         if (absence.absence_type === 'urlaub') {
-          // Urlaub erfüllt Soll-Stunden
           todayMinutes += absenceMinutes;
         } else if (absence.absence_type === 'juep') {
-          // JÜP wird vom Überstundenkonto abgezogen (negativ)
           todayMinutes += absenceMinutes;
         }
-        // Krankheit wird nicht gezählt
       }
 
       // Wochenvergleich für Abwesenheiten: Montag bis Sonntag
-      if (absence.date >= weekStartDateStr && absence.date <= weekEndDateStr) {
+      if (absence.date >= weekStartStr && absence.date <= weekEndStr) {
         weekTargetMinutes += TARGET_HOURS_DAILY[absenceDayOfWeek] || 0;
         
         if (absence.absence_type === 'urlaub') {
