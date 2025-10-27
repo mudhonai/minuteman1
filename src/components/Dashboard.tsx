@@ -60,6 +60,11 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     return netMinutes;
   }, [currentEntry, currentTime]);
 
+  // === DEDUPLIZIERUNG: Nur eindeutige Einträge verwenden ===
+  const uniqueTimeEntries = timeEntries.filter((entry, index, self) =>
+    index === self.findIndex(e => e.id === entry.id)
+  );
+
   // === WOCHE: Montag 00:00 bis Sonntag 23:59 ===
   const heute = new Date();
   heute.setHours(0, 0, 0, 0);
@@ -92,13 +97,8 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
   let monthSurchargeAmount = 0;
   let monthOvertimeMinutes = 0;
 
-  console.log('=== DASHBOARD WOCHE DEBUG ===');
-  console.log('Woche:', montagStr, 'bis', sonntagStr);
-  console.log('Anzahl timeEntries:', timeEntries.length);
-  console.log('Alle timeEntries:', timeEntries.map(e => ({ date: e.date, min: e.net_work_duration_minutes, id: e.id })));
-
-  // Durch alle Einträge gehen
-  for (const entry of timeEntries) {
+  // Durch alle EINDEUTIGEN Einträge gehen
+  for (const entry of uniqueTimeEntries) {
     // Heute
     if (entry.date === todayDateStr) {
       todayMinutes += entry.net_work_duration_minutes;
