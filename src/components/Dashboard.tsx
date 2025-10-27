@@ -80,8 +80,6 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
     const weekEndStr = `${weekEnd.getFullYear()}-${String(weekEnd.getMonth() + 1).padStart(2, '0')}-${String(weekEnd.getDate()).padStart(2, '0')}`;
-    
-    console.log('📅 Wochenbereich:', weekStartStr, 'bis', weekEndStr);
 
     let todayMinutes = 0;
     let todaySurchargeMinutes = 0;
@@ -115,7 +113,6 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
 
       // Woche: Nur Einträge zwischen Montag und Sonntag
       if (entry.date >= weekStartStr && entry.date <= weekEndStr) {
-        console.log('  ✅ Woche +', entry.date, entry.net_work_duration_minutes, 'min');
         weekTotalMinutes += entry.net_work_duration_minutes;
         weekSurchargeAmount += entry.surcharge_amount;
         weekOvertimeMinutes += overtimeForEntry;
@@ -171,20 +168,21 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     const todayDayOfWeek = selectedDate.getDay();
     const todayTargetMinutes = TARGET_HOURS_DAILY[todayDayOfWeek] || 0;
 
-    // Füge liveMinutes nur hinzu, wenn heute der ausgewählte Tag ist UND eine aktive Session läuft
+    console.log('🔍 DEBUG - weekTotalMinutes VOR liveMinutes:', weekTotalMinutes);
+    console.log('🔍 DEBUG - liveMinutes:', liveMinutes);
+    console.log('🔍 DEBUG - currentEntry:', currentEntry);
+    console.log('🔍 DEBUG - status:', status);
+    console.log('🔍 DEBUG - isToday:', isToday);
+
+    // Füge liveMinutes NUR hinzu, wenn AKTIV eine Session läuft
     if (isToday && currentEntry && status !== 'idle') {
-      console.log('🔴 LIVE-MINUTEN HINZUFÜGEN:', liveMinutes, 'Status:', status);
+      console.log('✅ Live-Session läuft - füge hinzu');
       todayMinutes += liveMinutes;
       weekTotalMinutes += liveMinutes;
       monthTotalMinutes += liveMinutes;
-    } else {
-      console.log('✅ KEINE LIVE-MINUTEN (kein aktiver Eintrag oder nicht heute)');
     }
 
-    console.log('📊 FINALE BERECHNUNG:');
-    console.log('  - Tagesstunden:', todayMinutes, 'min =', formatMinutesToHHMM(todayMinutes));
-    console.log('  - Wochenstunden:', weekTotalMinutes, 'min =', formatMinutesToHHMM(weekTotalMinutes));
-    console.log('  - Monatsstunden:', monthTotalMinutes, 'min =', formatMinutesToHHMM(monthTotalMinutes));
+    console.log('🔍 DEBUG - weekTotalMinutes NACH liveMinutes:', weekTotalMinutes);
 
     return {
       todayMinutes,
