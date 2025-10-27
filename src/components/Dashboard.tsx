@@ -7,7 +7,7 @@ import { formatMinutesToHHMM, formatGermanDateTime, calculateNetWorkDuration } f
 import { generatePDFReport } from '@/lib/pdfExport';
 import { useWorkActions } from '@/hooks/useWorkActions';
 import { toast } from 'sonner';
-import { Download } from 'lucide-react';
+import { Download, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 
 interface DashboardProps {
   currentEntry: CurrentEntry | null;
@@ -20,8 +20,30 @@ interface DashboardProps {
 
 export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId, customHolidays }: DashboardProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [pdfPeriod, setPdfPeriod] = useState<'week' | 'month' | 'year'>('month');
   const { startWork, startBreak, endBreak, endWork } = useWorkActions(userId, customHolidays);
+
+  const goToPreviousDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 1);
+    setSelectedDate(newDate);
+  };
+
+  const goToNextDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 1);
+    // Nicht in die Zukunft navigieren
+    if (newDate <= new Date()) {
+      setSelectedDate(newDate);
+    }
+  };
+
+  const goToToday = () => {
+    setSelectedDate(new Date());
+  };
+
+  const isToday = selectedDate.toISOString().substring(0, 10) === new Date().toISOString().substring(0, 10);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -40,14 +62,14 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
 
   const dashboardData = useMemo(() => {
     const now = currentTime;
-    const todayDateStr = now.toISOString().substring(0, 10);
+    const todayDateStr = selectedDate.toISOString().substring(0, 10);
     const currentMonthStr = now.toISOString().substring(0, 7);
     
     const weekStart = new Date(now);
     weekStart.setDate(weekStart.getDate() - (weekStart.getDay() || 7) + 1);
     weekStart.setHours(0, 0, 0, 0);
 
-    let todayMinutes = liveMinutes;
+    let todayMinutes = isToday ? liveMinutes : 0;
     let todaySurchargeMinutes = 0;
     let weekTotalMinutes = liveMinutes;
     let weekSurchargeAmount = 0;
@@ -131,7 +153,7 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
       }
     });
 
-    const todayDayOfWeek = now.getDay();
+    const todayDayOfWeek = selectedDate.getDay();
     const todayTargetMinutes = TARGET_HOURS_DAILY[todayDayOfWeek] || 0;
 
     return {
@@ -145,7 +167,7 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
       monthOvertime: monthOvertimeMinutes,
       monthSurchargeAmount,
     };
-  }, [currentTime, timeEntries, absences, liveMinutes]);
+  }, [currentTime, selectedDate, isToday, timeEntries, absences, liveMinutes]);
 
   const getStatusCardClass = () => {
     if (status === 'working') return 'bg-primary/20 border-primary';
@@ -215,9 +237,52 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
         </Button>
       </div>
 
+      {/* Date Navigation */}
+      <div className="flex items-center justify-between gap-2 border-t border-border pt-4">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={goToPreviousDay}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        
+        <div className="flex items-center gap-2 flex-1 justify-center">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-xl font-semibold">
+            {selectedDate.toLocaleDateString('de-DE', { 
+              weekday: 'long', 
+              day: '2-digit', 
+              month: 'long', 
+              year: 'numeric' 
+            })}
+          </h2>
+        </div>
+
+        <div className="flex gap-2">
+          {!isToday && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToToday}
+            >
+              Heute
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={goToNextDay}
+            disabled={isToday}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
       {/* Stats */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold border-t border-border pt-4">Heutige Übersicht</h2>
+        <h3 className="text-lg font-semibold">Tagesübersicht</h3>
         <div className="grid grid-cols-2 gap-4">
           <Card className="p-4 bg-primary/10 border-primary">
             <p className="text-sm opacity-80">Tagesstunden (Netto)</p>
