@@ -65,15 +65,17 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     const todayDateStr = selectedDate.toISOString().substring(0, 10);
     const currentMonthStr = now.toISOString().substring(0, 7);
     
-    // Wochenstart: Montag 00:01 Uhr (lokale Zeit)
+    // Wochenstart: Montag dieser Woche um 00:01 Uhr
     const weekStart = new Date(now);
-    weekStart.setDate(weekStart.getDate() - (weekStart.getDay() || 7) + 1);
+    const currentDayOfWeek = weekStart.getDay();
+    const daysToMonday = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1; // Sonntag = 6 Tage zurück
+    weekStart.setDate(weekStart.getDate() - daysToMonday);
     weekStart.setHours(0, 1, 0, 0);
-    const weekStartStr = weekStart.toISOString(); // Vergleich mit ISO String
+    const weekStartDateStr = weekStart.toISOString().substring(0, 10); // Nur Datum: 2025-10-27
 
-    // Monatsstart: 1. des Monats 00:01 Uhr (lokale Zeit)
+    // Monatsstart: 1. des Monats 00:01 Uhr
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 1, 0, 0);
-    const monthStartStr = monthStart.toISOString(); // Vergleich mit ISO String
+    const monthStartDateStr = monthStart.toISOString().substring(0, 7); // Nur Jahr-Monat: 2025-10
 
     let todayMinutes = isToday ? liveMinutes : 0;
     let todaySurchargeMinutes = 0;
@@ -105,8 +107,8 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
         todaySurchargeMinutes += entry.surcharge_minutes;
       }
 
-      // Wochenvergleich: Nur Einträge ab diesem Montag 00:01 Uhr
-      if (entry.start_time >= weekStartStr) {
+      // Wochenvergleich: Nur Einträge ab diesem Montag (Datumsvergleich)
+      if (entry.date >= weekStartDateStr) {
         weekTotalMinutes += entry.net_work_duration_minutes;
         weekSurchargeAmount += entry.surcharge_amount;
         weekOvertimeMinutes += overtimeForEntry;
@@ -137,8 +139,7 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
       }
 
       // Wochenvergleich für Abwesenheiten
-      const absenceDateStr = `${year}-${month}-${day}T00:00:00.000Z`;
-      if (absenceDateStr >= weekStartStr.substring(0, 10)) {
+      if (absence.date >= weekStartDateStr) {
         weekTargetMinutes += TARGET_HOURS_DAILY[absenceDayOfWeek] || 0;
         
         if (absence.absence_type === 'urlaub') {
