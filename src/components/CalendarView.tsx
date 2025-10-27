@@ -202,7 +202,13 @@ export const CalendarView = ({ timeEntries, absences }: CalendarViewProps) => {
             `}
           >
             <div className="font-semibold">{day.dayNumber}</div>
-            {day.totalMinutes > 0 && (
+            {day.absence ? (
+              <div className="text-[10px] font-bold mt-0.5">
+                {day.absence.absence_type === 'urlaub' ? 'U' : 
+                 day.absence.absence_type === 'juep' ? 'JÜP' : 
+                 day.absence.absence_type === 'krankheit' ? 'K' : ''}
+              </div>
+            ) : day.totalMinutes > 0 && (
               <div className="text-[10px] font-bold mt-0.5">
                 {formatMinutesToHHMM(day.totalMinutes)}
               </div>
