@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { TimeEntry, Break } from '@/lib/types';
+import { TimeEntry, Break, TARGET_HOURS_DAILY } from '@/lib/types';
 import { formatMinutesToHHMM, formatGermanDateTime, formatDateForHistory, calculateNetWorkDuration, calculateSurcharge } from '@/lib/timeUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Pencil, Trash2, Plus, X } from 'lucide-react';
+import { Pencil, Trash2, Plus, X, TrendingUp } from 'lucide-react';
 
 interface HistoryProps {
   timeEntries: TimeEntry[];
@@ -259,7 +259,23 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
           <Plus className="h-4 w-4" />
           Neuen Tag hinzufügen
         </Button>
-        {timeEntries.map((entry) => (
+        {timeEntries.map((entry) => {
+          const entryDate = new Date(entry.start_time);
+          const dayOfWeek = entryDate.getDay();
+          const targetMinutes = TARGET_HOURS_DAILY[dayOfWeek] || 0;
+          const isWeekendOrHoliday = dayOfWeek === 0 || dayOfWeek === 6 || entry.is_surcharge_day;
+          
+          // Überstunden berechnen
+          let overtimeMinutes = 0;
+          if (isWeekendOrHoliday) {
+            // Am Wochenende/Feiertag ist alles Überstunde
+            overtimeMinutes = entry.net_work_duration_minutes;
+          } else {
+            // Unter der Woche nur die Zeit über dem Soll
+            overtimeMinutes = Math.max(0, entry.net_work_duration_minutes - targetMinutes);
+          }
+
+          return (
           <Card key={entry.id} className="p-4 border-l-4 border-primary">
             <div className="flex justify-between items-start">
               <div className="flex-1">
@@ -275,6 +291,16 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
                 <p className="text-sm text-muted-foreground">
                   Pausendauer: {formatMinutesToHHMM(Math.round(entry.total_break_duration_ms / (1000 * 60)))}
                 </p>
+                
+                {overtimeMinutes > 0 && (
+                  <div className="mt-2 flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-1 px-2 py-1 bg-primary/10 rounded font-semibold text-primary">
+                      <TrendingUp className="h-3 w-3" />
+                      Überstunden: {formatMinutesToHHMM(overtimeMinutes)}
+                    </div>
+                  </div>
+                )}
+                
                 {entry.is_surcharge_day && (
                   <div className="mt-2 text-xs font-semibold px-2 py-1 bg-secondary/20 rounded inline-block text-secondary">
                     {entry.surcharge_label} (Wert: {formatMinutesToHHMM(entry.surcharge_amount)} Min)
@@ -301,7 +327,8 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
               </div>
             </div>
           </Card>
-        ))}
+        );
+        })}
       </div>
 
       <Dialog open={!!editingEntry || isAddingNew} onOpenChange={closeEditDialog}>

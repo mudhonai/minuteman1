@@ -1,1 +1,4 @@
 project_id = "satbjshxrtcemcgwulwj"
+
+[functions.recalculate-surcharges]
+verify_jwt = false
