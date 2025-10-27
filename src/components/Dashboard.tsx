@@ -65,20 +65,18 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     const todayDateStr = selectedDate.toISOString().substring(0, 10);
     const currentMonthStr = now.toISOString().substring(0, 7);
     
-    // Wochenstart: Montag dieser Woche um 00:01 Uhr
-    const today = new Date(now);
+    // Wochenstart: Montag dieser Woche
+    const today = new Date();
     today.setHours(0, 0, 0, 0);
     const currentDayOfWeek = today.getDay(); // 0=Sonntag, 1=Montag, ..., 6=Samstag
     
-    // Berechne den Montag dieser Woche
+    // Berechne den Montag dieser Woche (ISO-Woche: Montag = Start)
     const weekStart = new Date(today);
     if (currentDayOfWeek === 0) {
-      // Heute ist Sonntag - Montag war vor 6 Tagen (nicht vor, dieser Sonntag gehört zur letzten Woche)
-      weekStart.setDate(weekStart.getDate() + 1); // Nächster Montag
-    } else if (currentDayOfWeek === 1) {
-      // Heute ist Montag - das ist der Wochenstart, nichts ändern
+      // Sonntag: gehe 6 Tage zurück zum Montag
+      weekStart.setDate(weekStart.getDate() - 6);
     } else {
-      // Di-Sa - gehe zurück zum Montag dieser Woche
+      // Montag-Samstag: gehe zurück zum Montag
       weekStart.setDate(weekStart.getDate() - (currentDayOfWeek - 1));
     }
     const weekStartDateStr = weekStart.toISOString().substring(0, 10);
