@@ -70,7 +70,7 @@ export const calculateSurcharge = (
   let regularMinutes = netMinutes;
   let isSurchargeDay = false; // Nur für echte Sondertage (Sa, So, Feiertag)
 
-  // Feiertage: Ab der ersten Minute 130% Zuschlag
+  // Feiertage: Gesamte Zeit + 130% Zuschlag
   if (isHol) {
     rate = SURCHARGE_RATES.HOLIDAY;
     label = 'Feiertagszuschlag (130%)';
@@ -78,7 +78,7 @@ export const calculateSurcharge = (
     regularMinutes = 0; // Alles ist Überstunde
     isSurchargeDay = true; // ECHTER Sondertag
   } 
-  // Samstag: Ab der ersten Minute 30% Zuschlag
+  // Samstag: Gesamte Zeit + 30% Zuschlag
   else if (dayOfWeek === 6) {
     rate = SURCHARGE_RATES.SATURDAY;
     label = 'Samstagszuschlag (30%)';
@@ -86,7 +86,7 @@ export const calculateSurcharge = (
     regularMinutes = 0; // Alles ist Überstunde
     isSurchargeDay = true; // ECHTER Sondertag
   } 
-  // Sonntag: Ab der ersten Minute 60% Zuschlag
+  // Sonntag: Gesamte Zeit + 60% Zuschlag
   else if (dayOfWeek === 0) {
     rate = SURCHARGE_RATES.SUNDAY;
     label = 'Sonntagszuschlag (60%)';
@@ -108,7 +108,9 @@ export const calculateSurcharge = (
     }
   }
 
-  const surchargeAmount = Math.round(surchargeMinutes * rate);
+  // Zuschlagswert = Gearbeitete Zeit + Zuschlag darauf
+  // Beispiel Sonntag: 552 Min + (552 * 0.60) = 552 + 331 = 883 Min
+  const surchargeAmount = Math.round(surchargeMinutes + (surchargeMinutes * rate));
 
   return {
     regularMinutes,

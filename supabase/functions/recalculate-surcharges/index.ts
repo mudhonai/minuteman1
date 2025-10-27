@@ -88,7 +88,9 @@ const calculateSurcharge = (
     }
   }
 
-  const surchargeAmount = Math.round(surchargeMinutes * rate);
+  // Zuschlagswert = Gearbeitete Zeit + Zuschlag darauf
+  // Beispiel Sonntag: 552 Min + (552 * 0.60) = 552 + 331 = 883 Min
+  const surchargeAmount = Math.round(surchargeMinutes + (surchargeMinutes * rate));
 
   return {
     regularMinutes,
