@@ -143,7 +143,7 @@ export const Absences = ({ absences }: AbsencesProps) => {
   };
 
   const sortedAbsences = [...absences].sort((a, b) => 
-    new Date(b.date).getTime() - new Date(a.date).getTime()
+    b.date.localeCompare(a.date)
   );
 
   const monthlyStats = absences.reduce((acc, entry) => {
@@ -200,12 +200,7 @@ export const Absences = ({ absences }: AbsencesProps) => {
                 <div className="flex-1">
                   <div className="flex justify-between items-center">
                     <h3 className="font-bold">
-                      {new Date(entry.date).toLocaleDateString('de-DE', { 
-                        weekday: 'short', 
-                        day: '2-digit', 
-                        month: '2-digit', 
-                        year: 'numeric' 
-                      })}
+                      {entry.date.split('-').reverse().join('.')}, {new Date(entry.date + 'T12:00:00').toLocaleDateString('de-DE', { weekday: 'short' })}
                     </h3>
                     <span className="text-xl font-bold">{entry.hours}h</span>
                   </div>
