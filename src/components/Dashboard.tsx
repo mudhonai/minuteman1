@@ -77,11 +77,11 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
 
     let todayMinutes = isToday ? liveMinutes : 0;
     let todaySurchargeMinutes = 0;
-    let weekTotalMinutes = liveMinutes;
+    let weekTotalMinutes = isToday ? liveMinutes : 0; // Nur heute's liveMinutes, wenn heute
     let weekSurchargeAmount = 0;
     let weekOvertimeMinutes = 0;
     let weekTargetMinutes = 0;
-    let monthTotalMinutes = liveMinutes;
+    let monthTotalMinutes = isToday ? liveMinutes : 0; // Nur heute's liveMinutes, wenn heute
     let monthSurchargeAmount = 0;
     let monthOvertimeMinutes = 0;
     let monthTargetMinutes = 0;
