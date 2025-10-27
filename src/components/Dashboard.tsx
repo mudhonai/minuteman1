@@ -92,6 +92,11 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
   let monthSurchargeAmount = 0;
   let monthOvertimeMinutes = 0;
 
+  console.log('=== DASHBOARD WOCHE DEBUG ===');
+  console.log('Woche:', montagStr, 'bis', sonntagStr);
+  console.log('Anzahl timeEntries:', timeEntries.length);
+  console.log('Alle timeEntries:', timeEntries.map(e => ({ date: e.date, min: e.net_work_duration_minutes, id: e.id })));
+
   // Durch alle Einträge gehen
   for (const entry of timeEntries) {
     // Heute
