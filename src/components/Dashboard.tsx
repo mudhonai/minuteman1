@@ -79,13 +79,15 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
       weekStart.setDate(weekStart.getDate() - (nowDayOfWeek - 1));
     }
     weekStart.setHours(0, 0, 0, 0);
-    const weekStartDateStr = weekStart.toISOString().substring(0, 10);
+    // WICHTIG: Lokales Datum verwenden, nicht UTC!
+    const weekStartDateStr = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
     
     // Wochenende: Sonntag dieser Woche
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
     weekEnd.setHours(23, 59, 59, 999);
-    const weekEndDateStr = weekEnd.toISOString().substring(0, 10);
+    // WICHTIG: Lokales Datum verwenden, nicht UTC!
+    const weekEndDateStr = `${weekEnd.getFullYear()}-${String(weekEnd.getMonth() + 1).padStart(2, '0')}-${String(weekEnd.getDate()).padStart(2, '0')}`;
     
     console.log('Woche:', weekStartDateStr, 'bis', weekEndDateStr);
 
