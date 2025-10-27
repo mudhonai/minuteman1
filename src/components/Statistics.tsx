@@ -28,13 +28,16 @@ export const Statistics = ({ timeEntries, absences }: StatisticsProps) => {
     let startDate: Date;
 
     if (timeRange === 'week') {
+      // Wochenstart: Montag 00:01 Uhr
       startDate = new Date(now);
       startDate.setDate(startDate.getDate() - startDate.getDay() + 1);
-      startDate.setHours(0, 0, 0, 0);
+      startDate.setHours(0, 1, 0, 0);
     } else if (timeRange === 'month') {
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      // Monatsstart: 1. des Monats 00:01 Uhr
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 1, 0, 0);
     } else {
-      startDate = new Date(now.getFullYear(), 0, 1);
+      // Jahresstart: 1. Januar 00:01 Uhr
+      startDate = new Date(now.getFullYear(), 0, 1, 0, 1, 0, 0);
     }
 
     const filteredEntries = timeEntries.filter(e => new Date(e.start_time) >= startDate);
@@ -49,8 +52,10 @@ export const Statistics = ({ timeEntries, absences }: StatisticsProps) => {
     
     filteredEntries.forEach(entry => {
       const date = new Date(entry.start_time);
+      // Wochenstart: Montag 00:01 Uhr
       const weekStart = new Date(date);
       weekStart.setDate(weekStart.getDate() - (weekStart.getDay() || 7) + 1);
+      weekStart.setHours(0, 1, 0, 0);
       const weekKey = weekStart.toISOString().split('T')[0];
       
       if (!weeklyData[weekKey]) {

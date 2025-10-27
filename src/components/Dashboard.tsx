@@ -65,9 +65,13 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     const todayDateStr = selectedDate.toISOString().substring(0, 10);
     const currentMonthStr = now.toISOString().substring(0, 7);
     
+    // Wochenstart: Montag 00:01 Uhr
     const weekStart = new Date(now);
     weekStart.setDate(weekStart.getDate() - (weekStart.getDay() || 7) + 1);
-    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setHours(0, 1, 0, 0);
+
+    // Monatsstart: 1. des Monats 00:01 Uhr
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 1, 0, 0);
 
     let todayMinutes = isToday ? liveMinutes : 0;
     let todaySurchargeMinutes = 0;
