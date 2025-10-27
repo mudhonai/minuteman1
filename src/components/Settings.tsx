@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { UserSettings, NRW_HOLIDAYS_2025 } from '@/lib/types';
 import { toast } from 'sonner';
+import { RefreshCw } from 'lucide-react';
 
 interface SettingsProps {
   settings: UserSettings | null;
@@ -14,6 +15,7 @@ interface SettingsProps {
 
 export const Settings = ({ settings, userId }: SettingsProps) => {
   const [holidayInput, setHolidayInput] = useState('');
+  const [isRecalculating, setIsRecalculating] = useState(false);
 
   const updateSettings = async (updates: Partial<UserSettings>) => {
     try {
@@ -55,6 +57,22 @@ export const Settings = ({ settings, userId }: SettingsProps) => {
   const removeCustomHoliday = (holiday: string) => {
     const customHolidays = settings?.custom_holidays || [];
     updateSettings({ custom_holidays: customHolidays.filter(h => h !== holiday) });
+  };
+
+  const recalculateSurcharges = async () => {
+    setIsRecalculating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('recalculate-surcharges');
+      
+      if (error) throw error;
+      
+      toast.success(data?.message || 'Zuschläge erfolgreich neu berechnet!');
+      window.location.reload(); // Reload to show updated data
+    } catch (error: any) {
+      toast.error(error.message || 'Fehler bei der Neuberechnung');
+    } finally {
+      setIsRecalculating(false);
+    }
   };
 
   return (
@@ -108,6 +126,22 @@ export const Settings = ({ settings, userId }: SettingsProps) => {
           />
           <Button type="submit">Hinzufügen</Button>
         </form>
+      </Card>
+
+      <Card className="p-4">
+        <h3 className="text-xl font-semibold mb-3">Zuschläge neu berechnen</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Samstage, Sonntage und Feiertage werden ab der ersten Minute als Überstunden mit 30%, 60% bzw. 130% Zuschlag berechnet. 
+          Mit diesem Button werden alle bestehenden Einträge rückwirkend nach den aktuellen Regeln neu berechnet.
+        </p>
+        <Button 
+          onClick={recalculateSurcharges}
+          disabled={isRecalculating}
+          className="w-full"
+        >
+          <RefreshCw className={`mr-2 h-4 w-4 ${isRecalculating ? 'animate-spin' : ''}`} />
+          {isRecalculating ? 'Berechne neu...' : 'Alle Zuschläge neu berechnen'}
+        </Button>
       </Card>
     </div>
   );

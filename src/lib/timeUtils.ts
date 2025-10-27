@@ -67,21 +67,31 @@ export const calculateSurcharge = (
   let rate = 0;
   let label = 'Regulär';
   let surchargeMinutes = 0;
+  let regularMinutes = netMinutes;
 
+  // Feiertage: Ab der ersten Minute 130% Zuschlag
   if (isHol) {
     rate = SURCHARGE_RATES.HOLIDAY;
     label = 'Feiertagszuschlag (130%)';
     surchargeMinutes = netMinutes;
-  } else if (dayOfWeek === 6) {
+    regularMinutes = 0; // Alles ist Überstunde
+  } 
+  // Samstag: Ab der ersten Minute 30% Zuschlag
+  else if (dayOfWeek === 6) {
     rate = SURCHARGE_RATES.SATURDAY;
     label = 'Samstagszuschlag (30%)';
     surchargeMinutes = netMinutes;
-  } else if (dayOfWeek === 0) {
+    regularMinutes = 0; // Alles ist Überstunde
+  } 
+  // Sonntag: Ab der ersten Minute 60% Zuschlag
+  else if (dayOfWeek === 0) {
     rate = SURCHARGE_RATES.SUNDAY;
     label = 'Sonntagszuschlag (60%)';
     surchargeMinutes = netMinutes;
-  } else if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-    // Montag bis Freitag: Überstunden erhalten 30% Zuschlag
+    regularMinutes = 0; // Alles ist Überstunde
+  } 
+  // Montag bis Freitag: Nur Überstunden über Soll erhalten 30% Zuschlag
+  else if (dayOfWeek >= 1 && dayOfWeek <= 5) {
     const targetMinutes = TARGET_HOURS_DAILY[dayOfWeek] || 0;
     const overtimeMinutes = Math.max(0, netMinutes - targetMinutes);
     
@@ -89,13 +99,14 @@ export const calculateSurcharge = (
       rate = SURCHARGE_RATES.SATURDAY; // 30%
       label = 'Überstundenzuschlag (30%)';
       surchargeMinutes = overtimeMinutes;
+      regularMinutes = targetMinutes; // Nur das Soll ist regulär
     }
   }
 
   const surchargeAmount = Math.round(surchargeMinutes * rate);
 
   return {
-    regularMinutes: netMinutes,
+    regularMinutes,
     surchargeMinutes,
     surchargeAmount,
     isSurchargeDay: rate > 0,
