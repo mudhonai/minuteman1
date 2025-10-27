@@ -72,6 +72,12 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     weekStart.setDate(weekStart.getDate() - daysToMonday);
     weekStart.setHours(0, 1, 0, 0);
     const weekStartDateStr = weekStart.toISOString().substring(0, 10); // Nur Datum: 2025-10-27
+    
+    // Wochenende: Sonntag dieser Woche um 23:59 Uhr
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6); // +6 Tage = Sonntag
+    weekEnd.setHours(23, 59, 59, 999);
+    const weekEndDateStr = weekEnd.toISOString().substring(0, 10); // Nur Datum
 
     // Monatsstart: 1. des Monats 00:01 Uhr
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 1, 0, 0);
@@ -79,7 +85,7 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
 
     let todayMinutes = isToday ? liveMinutes : 0;
     let todaySurchargeMinutes = 0;
-    let weekTotalMinutes = isToday ? liveMinutes : 0; // Nur heute's liveMinutes, wenn heute
+    let weekTotalMinutes = 0; // Woche = Montag bis Sonntag (komplette Woche)
     let weekSurchargeAmount = 0;
     let weekOvertimeMinutes = 0;
     let weekTargetMinutes = 0;
@@ -107,8 +113,8 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
         todaySurchargeMinutes += entry.surcharge_minutes;
       }
 
-      // Wochenvergleich: Nur Einträge ab diesem Montag (Datumsvergleich)
-      if (entry.date >= weekStartDateStr) {
+      // Wochenvergleich: Montag bis Sonntag dieser Woche
+      if (entry.date >= weekStartDateStr && entry.date <= weekEndDateStr) {
         weekTotalMinutes += entry.net_work_duration_minutes;
         weekSurchargeAmount += entry.surcharge_amount;
         weekOvertimeMinutes += overtimeForEntry;
@@ -138,8 +144,8 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
         // Krankheit wird nicht gezählt
       }
 
-      // Wochenvergleich für Abwesenheiten
-      if (absence.date >= weekStartDateStr) {
+      // Wochenvergleich für Abwesenheiten: Montag bis Sonntag
+      if (absence.date >= weekStartDateStr && absence.date <= weekEndDateStr) {
         weekTargetMinutes += TARGET_HOURS_DAILY[absenceDayOfWeek] || 0;
         
         if (absence.absence_type === 'urlaub') {
