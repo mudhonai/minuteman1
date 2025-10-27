@@ -60,120 +60,110 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     return netMinutes;
   }, [currentEntry, currentTime]);
 
-  const dashboardData = useMemo(() => {
-    const now = currentTime;
-    const todayDateStr = selectedDate.toISOString().substring(0, 10);
-    const currentMonthStr = now.toISOString().substring(0, 7);
+  // Direkte Berechnung ohne useMemo - verhindert Cache-Probleme
+  const now = currentTime;
+  const todayDateStr = selectedDate.toISOString().substring(0, 10);
+  const currentMonthStr = now.toISOString().substring(0, 7);
+  
+  // Woche: Montag 00:00 bis Sonntag 23:59
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dayOfWeek = today.getDay();
+  
+  const mondayOffset = dayOfWeek === 0 ? -6 : -(dayOfWeek - 1);
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() + mondayOffset);
+  const weekStartStr = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
+  
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  const weekEndStr = `${weekEnd.getFullYear()}-${String(weekEnd.getMonth() + 1).padStart(2, '0')}-${String(weekEnd.getDate()).padStart(2, '0')}`;
+
+  let todayMinutes = 0;
+  let todaySurchargeMinutes = 0;
+  let weekTotalMinutes = 0;
+  let weekSurchargeAmount = 0;
+  let weekOvertimeMinutes = 0;
+  let monthTotalMinutes = 0;
+  let monthSurchargeAmount = 0;
+  let monthOvertimeMinutes = 0;
+
+  // NUR abgeschlossene DB-Einträge zählen
+  timeEntries.forEach(entry => {
+    const entryDayOfWeek = new Date(entry.start_time).getDay();
+    const isWeekendOrHoliday = entryDayOfWeek === 0 || entryDayOfWeek === 6 || entry.is_surcharge_day;
     
-    // Woche: Montag 00:00 bis Sonntag 23:59 der aktuellen Woche
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dayOfWeek = today.getDay();
-    
-    const mondayOffset = dayOfWeek === 0 ? -6 : -(dayOfWeek - 1);
-    const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() + mondayOffset);
-    const weekStartStr = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
-    
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
-    const weekEndStr = `${weekEnd.getFullYear()}-${String(weekEnd.getMonth() + 1).padStart(2, '0')}-${String(weekEnd.getDate()).padStart(2, '0')}`;
+    let overtimeForEntry = 0;
+    if (isWeekendOrHoliday) {
+      overtimeForEntry = entry.net_work_duration_minutes;
+    } else {
+      const targetForDay = TARGET_HOURS_DAILY[entryDayOfWeek] || 0;
+      overtimeForEntry = Math.max(0, entry.net_work_duration_minutes - targetForDay);
+    }
 
-    let todayMinutes = 0;
-    let todaySurchargeMinutes = 0;
-    let weekTotalMinutes = 0;
-    let weekSurchargeAmount = 0;
-    let weekOvertimeMinutes = 0;
-    let weekTargetMinutes = 0;
-    let monthTotalMinutes = 0;
-    let monthSurchargeAmount = 0;
-    let monthOvertimeMinutes = 0;
-    let monthTargetMinutes = 0;
+    if (entry.date === todayDateStr) {
+      todayMinutes += entry.net_work_duration_minutes;
+      todaySurchargeMinutes += entry.surcharge_minutes;
+    }
 
-    // Process time entries - NUR abgeschlossene Einträge aus der DB
-    timeEntries.forEach(entry => {
-      const entryDayOfWeek = new Date(entry.start_time).getDay();
-      const isWeekendOrHoliday = entryDayOfWeek === 0 || entryDayOfWeek === 6 || entry.is_surcharge_day;
-      
-      let overtimeForEntry = 0;
-      if (isWeekendOrHoliday) {
-        overtimeForEntry = entry.net_work_duration_minutes;
-      } else {
-        const targetForDay = TARGET_HOURS_DAILY[entryDayOfWeek] || 0;
-        overtimeForEntry = Math.max(0, entry.net_work_duration_minutes - targetForDay);
+    if (entry.date >= weekStartStr && entry.date <= weekEndStr) {
+      weekTotalMinutes += entry.net_work_duration_minutes;
+      weekSurchargeAmount += entry.surcharge_amount;
+      weekOvertimeMinutes += overtimeForEntry;
+    }
+
+    if (entry.date.startsWith(currentMonthStr)) {
+      monthTotalMinutes += entry.net_work_duration_minutes;
+      monthSurchargeAmount += entry.surcharge_amount;
+      monthOvertimeMinutes += overtimeForEntry;
+    }
+  });
+
+  absences.forEach(absence => {
+    const absenceMinutes = absence.hours * 60;
+    const [year, month, day] = absence.date.split('-');
+    const absenceDate = new Date(Number(year), Number(month) - 1, Number(day));
+    const absenceDayOfWeek = absenceDate.getDay();
+
+    if (absence.date === todayDateStr) {
+      if (absence.absence_type === 'urlaub' || absence.absence_type === 'juep') {
+        todayMinutes += absenceMinutes;
       }
+    }
 
-      if (entry.date === todayDateStr) {
-        todayMinutes += entry.net_work_duration_minutes;
-        todaySurchargeMinutes += entry.surcharge_minutes;
+    if (absence.date >= weekStartStr && absence.date <= weekEndStr) {
+      if (absence.absence_type === 'urlaub') {
+        weekTotalMinutes += absenceMinutes;
+      } else if (absence.absence_type === 'juep') {
+        weekTotalMinutes += absenceMinutes;
+        weekOvertimeMinutes -= absenceMinutes;
       }
+    }
 
-      if (entry.date >= weekStartStr && entry.date <= weekEndStr) {
-        weekTotalMinutes += entry.net_work_duration_minutes;
-        weekSurchargeAmount += entry.surcharge_amount;
-        weekOvertimeMinutes += overtimeForEntry;
+    if (absence.date.startsWith(currentMonthStr)) {
+      if (absence.absence_type === 'urlaub') {
+        monthTotalMinutes += absenceMinutes;
+      } else if (absence.absence_type === 'juep') {
+        monthTotalMinutes += absenceMinutes;
+        monthOvertimeMinutes -= absenceMinutes;
       }
+    }
+  });
 
-      if (entry.date.startsWith(currentMonthStr)) {
-        monthTotalMinutes += entry.net_work_duration_minutes;
-        monthSurchargeAmount += entry.surcharge_amount;
-        monthOvertimeMinutes += overtimeForEntry;
-      }
-    });
+  const todayDayOfWeek = selectedDate.getDay();
+  const todayTargetMinutes = TARGET_HOURS_DAILY[todayDayOfWeek] || 0;
 
-    // Process absences
-    absences.forEach(absence => {
-      const absenceMinutes = absence.hours * 60;
-      const [year, month, day] = absence.date.split('-');
-      const absenceDate = new Date(Number(year), Number(month) - 1, Number(day));
-      const absenceDayOfWeek = absenceDate.getDay();
-
-      if (absence.date === todayDateStr) {
-        if (absence.absence_type === 'urlaub') {
-          todayMinutes += absenceMinutes;
-        } else if (absence.absence_type === 'juep') {
-          todayMinutes += absenceMinutes;
-        }
-      }
-
-      if (absence.date >= weekStartStr && absence.date <= weekEndStr) {
-        weekTargetMinutes += TARGET_HOURS_DAILY[absenceDayOfWeek] || 0;
-        
-        if (absence.absence_type === 'urlaub') {
-          weekTotalMinutes += absenceMinutes;
-        } else if (absence.absence_type === 'juep') {
-          weekTotalMinutes += absenceMinutes;
-          weekOvertimeMinutes -= absenceMinutes;
-        }
-      }
-
-      if (absence.date.startsWith(currentMonthStr)) {
-        monthTargetMinutes += TARGET_HOURS_DAILY[absenceDayOfWeek] || 0;
-        
-        if (absence.absence_type === 'urlaub') {
-          monthTotalMinutes += absenceMinutes;
-        } else if (absence.absence_type === 'juep') {
-          monthTotalMinutes += absenceMinutes;
-          monthOvertimeMinutes -= absenceMinutes;
-        }
-      }
-    });
-
-    const todayDayOfWeek = selectedDate.getDay();
-    const todayTargetMinutes = TARGET_HOURS_DAILY[todayDayOfWeek] || 0;
-
-    return {
-      todayMinutes,
-      todaySurchargeMinutes,
-      todayTargetMinutes,
-      weekTotal: weekTotalMinutes,
-      weekOvertime: weekOvertimeMinutes,
-      weekSurchargeAmount,
-      monthTotal: monthTotalMinutes,
-      monthOvertime: monthOvertimeMinutes,
-      monthSurchargeAmount,
-    };
-  }, [currentTime, selectedDate, timeEntries, absences]);
+  const dashboardData = {
+    todayMinutes,
+    todaySurchargeMinutes,
+    todayTargetMinutes,
+    weekTotal: weekTotalMinutes,
+    weekOvertime: weekOvertimeMinutes,
+    weekSurchargeAmount,
+    monthTotal: monthTotalMinutes,
+    monthOvertime: monthOvertimeMinutes,
+    monthSurchargeAmount,
+  };
 
   const getStatusCardClass = () => {
     if (status === 'working') return 'bg-primary/20 border-primary';
