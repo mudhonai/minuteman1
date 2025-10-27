@@ -65,6 +65,10 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     index === self.findIndex(e => e.id === entry.id)
   );
 
+  console.log('🔴 ORIGINAL timeEntries:', timeEntries.length);
+  console.log('🔴 UNIQUE timeEntries:', uniqueTimeEntries.length);
+  console.log('🔴 Einträge für diese Woche:', uniqueTimeEntries.filter(e => e.date >= '2025-10-27' && e.date <= '2025-11-02').map(e => ({ date: e.date, min: e.net_work_duration_minutes, id: e.id.substring(0, 8) })));
+
   // === WOCHE: Montag 00:00 bis Sonntag 23:59 ===
   const heute = new Date();
   heute.setHours(0, 0, 0, 0);
@@ -83,6 +87,8 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
   const sonntag = new Date(montag);
   sonntag.setDate(montag.getDate() + 6);
   const sonntagStr = `${sonntag.getFullYear()}-${String(sonntag.getMonth() + 1).padStart(2, '0')}-${String(sonntag.getDate()).padStart(2, '0')}`;
+
+  console.log('🔴 WOCHE:', montagStr, 'bis', sonntagStr);
 
   // === BERECHNUNG ===
   const todayDateStr = selectedDate.toISOString().substring(0, 10);
@@ -107,6 +113,7 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
 
     // Woche (Montag bis Sonntag)
     if (entry.date >= montagStr && entry.date <= sonntagStr) {
+      console.log('  ✅ WOCHE +', entry.date, entry.net_work_duration_minutes, 'min, ID:', entry.id.substring(0, 8));
       weekTotalMinutes += entry.net_work_duration_minutes;
       weekSurchargeAmount += entry.surcharge_amount;
       
@@ -118,6 +125,7 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
         const targetForDay = TARGET_HOURS_DAILY[entryDayOfWeek] || 0;
         weekOvertimeMinutes += Math.max(0, entry.net_work_duration_minutes - targetForDay);
       }
+      console.log('  → weekTotalMinutes jetzt:', weekTotalMinutes);
     }
 
     // Monat
@@ -167,6 +175,8 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
 
   const todayDayOfWeek = selectedDate.getDay();
   const todayTargetMinutes = TARGET_HOURS_DAILY[todayDayOfWeek] || 0;
+
+  console.log('🔴 FINALE BERECHNUNG - weekTotalMinutes:', weekTotalMinutes, '=', formatMinutesToHHMM(weekTotalMinutes));
 
   const dashboardData = {
     todayMinutes,
