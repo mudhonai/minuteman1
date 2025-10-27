@@ -236,11 +236,11 @@ export const CalendarView = ({ timeEntries, absences }: CalendarViewProps) => {
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
                       <span>Start:</span>
-                      <span>{new Date(selectedDay.timeEntry.start_time).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>{selectedDay.timeEntry.start_time.split('T')[1]?.substring(0, 5) || '00:00'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Ende:</span>
-                      <span>{new Date(selectedDay.timeEntry.end_time).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>{selectedDay.timeEntry.end_time.split('T')[1]?.substring(0, 5) || '00:00'}</span>
                     </div>
                     <div className="flex justify-between font-bold">
                       <span>Arbeitszeit (Netto):</span>
