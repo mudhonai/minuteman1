@@ -95,13 +95,15 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 1, 0, 0);
     const monthStartDateStr = monthStart.toISOString().substring(0, 7); // Nur Jahr-Monat: 2025-10
 
-    let todayMinutes = isToday ? liveMinutes : 0;
+    // WICHTIG: liveMinutes nicht hier initialisieren, sonst Doppelzählung!
+    // liveMinutes wird nur für die aktuelle Live-Anzeige verwendet, nicht für abgeschlossene Einträge
+    let todayMinutes = 0;
     let todaySurchargeMinutes = 0;
-    let weekTotalMinutes = 0; // Woche = Montag bis Sonntag (komplette Woche)
+    let weekTotalMinutes = 0;
     let weekSurchargeAmount = 0;
     let weekOvertimeMinutes = 0;
     let weekTargetMinutes = 0;
-    let monthTotalMinutes = isToday ? liveMinutes : 0; // Nur heute's liveMinutes, wenn heute
+    let monthTotalMinutes = 0;
     let monthSurchargeAmount = 0;
     let monthOvertimeMinutes = 0;
     let monthTargetMinutes = 0;
@@ -185,6 +187,13 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
 
     const todayDayOfWeek = selectedDate.getDay();
     const todayTargetMinutes = TARGET_HOURS_DAILY[todayDayOfWeek] || 0;
+
+    // Füge liveMinutes nur hinzu, wenn heute der ausgewählte Tag ist UND eine aktive Session läuft
+    if (isToday && currentEntry && status !== 'idle') {
+      todayMinutes += liveMinutes;
+      weekTotalMinutes += liveMinutes;
+      monthTotalMinutes += liveMinutes;
+    }
 
     return {
       todayMinutes,
