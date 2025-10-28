@@ -100,15 +100,35 @@ export const NotificationSettings = ({ userId }: NotificationSettingsProps) => {
           <div className="flex items-center gap-3">
             <Bell className="h-5 w-5 text-primary" />
             <div className="flex-1">
-              <h3 className="font-bold">Push-Benachrichtigungen aktivieren</h3>
+              <h3 className="font-bold">Push-Benachrichtigungen</h3>
               <p className="text-sm text-muted-foreground mt-1">
                 Erhalte Erinnerungen für Pausen und zum Ausstempeln
               </p>
             </div>
           </div>
-          <Button onClick={handleEnableNotifications} className="w-full">
-            Benachrichtigungen aktivieren
-          </Button>
+
+          {permission === 'denied' ? (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 space-y-3">
+              <p className="text-sm font-medium text-destructive">
+                Benachrichtigungen wurden blockiert
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Um Benachrichtigungen zu aktivieren, musst du die Berechtigung in deinen Browser-Einstellungen zurücksetzen:
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside ml-2">
+                <li><strong>Chrome/Edge:</strong> Klicke auf das Schloss-Symbol in der Adressleiste → Berechtigungen → Benachrichtigungen → "Erlauben"</li>
+                <li><strong>Firefox:</strong> Klicke auf das Schloss-Symbol → Berechtigungen → Benachrichtigungen → Blockierung aufheben</li>
+                <li><strong>Safari:</strong> Safari → Einstellungen → Websites → Benachrichtigungen</li>
+              </ul>
+              <p className="text-xs text-muted-foreground">
+                Nach dem Zurücksetzen lade die Seite neu und klicke erneut auf "Aktivieren".
+              </p>
+            </div>
+          ) : (
+            <Button onClick={handleEnableNotifications} className="w-full">
+              Benachrichtigungen aktivieren
+            </Button>
+          )}
         </div>
       </Card>
     );
