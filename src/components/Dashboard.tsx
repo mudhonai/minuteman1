@@ -207,7 +207,7 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
         <Button
           onClick={startWork}
           disabled={status !== 'idle'}
-          className="p-6 text-lg font-bold bg-primary hover:bg-primary/90 disabled:opacity-50"
+          className="p-6 text-lg font-bold bg-destructive hover:bg-destructive/90 disabled:opacity-50"
         >
           Arbeitsbeginn
         </Button>
@@ -223,7 +223,7 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
         <Button
           onClick={() => endWork(currentEntry)}
           disabled={status === 'idle'}
-          className="col-span-2 p-6 text-lg font-bold bg-destructive hover:bg-destructive/90 disabled:opacity-50"
+          className="col-span-2 p-6 text-lg font-bold bg-green-600 hover:bg-green-700 disabled:opacity-50"
         >
           Arbeitsende
         </Button>
