@@ -56,19 +56,19 @@ const Index = () => {
         <header className="mb-6">
           <div className="flex justify-between items-center gap-2">
             <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
-              <div className="bg-primary/20 p-1.5 md:p-2 rounded-xl border-2 border-primary flex-shrink-0 w-11 h-11 md:w-14 md:h-14 flex items-center justify-center">
+              <div className="bg-primary/20 rounded-xl border-2 border-primary flex-shrink-0 w-12 h-12 md:w-14 md:h-14 flex items-center justify-center overflow-hidden">
                 <img 
                   src="/pwa-192x192.png" 
                   alt="Minuteman Logo" 
-                  className="w-full h-full object-contain"
+                  className="w-10 h-10 md:w-12 md:h-12 object-contain"
                 />
               </div>
-              <div className="min-w-0">
-                <h1 className="text-2xl md:text-4xl font-extrabold text-accent truncate">Minuteman</h1>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-xl sm:text-2xl md:text-4xl font-extrabold text-accent">Minuteman</h1>
                 <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">IchWarDa - Dein Zeiterfassungs-Terminal</p>
               </div>
             </div>
-            <Button onClick={handleSignOut} variant="ghost" size="sm" className="flex-shrink-0">
+            <Button onClick={handleSignOut} variant="ghost" size="sm" className="flex-shrink-0 text-xs sm:text-sm">
               Abmelden
             </Button>
           </div>
