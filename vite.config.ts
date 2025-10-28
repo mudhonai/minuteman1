@@ -53,7 +53,20 @@ export default defineConfig(({ mode }) => ({
         clientsClaim: true,
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/(api|admin)/],
+        // Force NetworkFirst for all assets to get updates faster
         runtimeCaching: [
+          {
+            urlPattern: /\.(?:js|css)$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'assets-cache-v2',
+              networkTimeoutSeconds: 3,
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 5 // 5 minutes only
+              }
+            }
+          },
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
             handler: 'NetworkFirst',
