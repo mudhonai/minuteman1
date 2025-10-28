@@ -95,12 +95,41 @@ export const useWorkActions = (userId: string | undefined, customHolidays: strin
         }
       }
 
-      // Calculate metrics
-      const { netMinutes, totalBreakMs } = calculateNetWorkDuration(
-        currentEntry.start_time,
-        endTime,
-        breaks
-      );
+      // Calculate gross work time (without breaks)
+      const grossWorkMs = new Date(endTime).getTime() - new Date(currentEntry.start_time).getTime();
+      const grossWorkHours = grossWorkMs / (1000 * 60 * 60);
+
+      // Calculate actual break time taken
+      let actualBreakMs = 0;
+      breaks.forEach(b => {
+        if (b.end) {
+          actualBreakMs += new Date(b.end).getTime() - new Date(b.start).getTime();
+        }
+      });
+      const actualBreakMinutes = actualBreakMs / (1000 * 60);
+
+      // Determine required break time based on work hours
+      let requiredBreakMinutes = 0;
+      if (grossWorkHours > 9) {
+        requiredBreakMinutes = 45;
+      } else if (grossWorkHours > 6) {
+        requiredBreakMinutes = 30;
+      }
+
+      // If actual break is less than required, add the difference automatically
+      if (actualBreakMinutes < requiredBreakMinutes) {
+        const missingBreakMinutes = requiredBreakMinutes - actualBreakMinutes;
+        actualBreakMs += missingBreakMinutes * 60 * 1000;
+        
+        toast.info(
+          `Gesetzliche Mindestpause von ${requiredBreakMinutes} Minuten wurde automatisch verrechnet (${missingBreakMinutes.toFixed(0)} Min. ergänzt).`,
+          { duration: 6000 }
+        );
+      }
+
+      // Calculate final metrics with enforced break time
+      const netMinutes = Math.max(0, Math.round((grossWorkMs - actualBreakMs) / (1000 * 60)));
+      const totalBreakMs = actualBreakMs;
 
       const surchargeData = calculateSurcharge(
         currentEntry.start_time,
