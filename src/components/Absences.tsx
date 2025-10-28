@@ -56,6 +56,7 @@ export const Absences = ({ absences }: AbsencesProps) => {
   const [isEditingAllowance, setIsEditingAllowance] = useState(false);
   const [allowanceYear, setAllowanceYear] = useState(new Date().getFullYear());
   const [totalDays, setTotalDays] = useState('30');
+  const [usedDays, setUsedDays] = useState('0');
   const [carriedOverDays, setCarriedOverDays] = useState('0');
   const [allowanceNotes, setAllowanceNotes] = useState('');
 
@@ -87,11 +88,13 @@ export const Absences = ({ absences }: AbsencesProps) => {
     if (vacationAllowance) {
       setAllowanceYear(vacationAllowance.year);
       setTotalDays(vacationAllowance.total_days.toString());
+      setUsedDays(vacationAllowance.used_days.toString());
       setCarriedOverDays(vacationAllowance.carried_over_days.toString());
       setAllowanceNotes(vacationAllowance.notes || '');
     } else {
       setAllowanceYear(new Date().getFullYear());
       setTotalDays('30');
+      setUsedDays('0');
       setCarriedOverDays('0');
       setAllowanceNotes('');
     }
@@ -107,6 +110,7 @@ export const Absences = ({ absences }: AbsencesProps) => {
         user_id: user.id,
         year: allowanceYear,
         total_days: parseFloat(totalDays),
+        used_days: parseFloat(usedDays),
         carried_over_days: parseFloat(carriedOverDays),
         notes: allowanceNotes.trim() || null,
       };
@@ -121,7 +125,7 @@ export const Absences = ({ absences }: AbsencesProps) => {
       } else {
         const { error } = await supabase
           .from('vacation_allowance')
-          .insert({ ...allowanceData, used_days: 0 });
+          .insert(allowanceData);
 
         if (error) throw error;
       }
@@ -528,6 +532,18 @@ export const Absences = ({ absences }: AbsencesProps) => {
                 value={totalDays}
                 onChange={(e) => setTotalDays(e.target.value)}
               />
+            </div>
+            <div>
+              <Label>Bereits verbrauchte Tage</Label>
+              <Input
+                type="number"
+                step="0.5"
+                value={usedDays}
+                onChange={(e) => setUsedDays(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Wird automatisch aktualisiert, wenn Urlaubseinträge hinzugefügt werden
+              </p>
             </div>
             <div>
               <Label>Übertragene Tage aus Vorjahr</Label>
