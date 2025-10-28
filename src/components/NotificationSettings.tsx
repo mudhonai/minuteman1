@@ -44,7 +44,13 @@ export const NotificationSettings = ({ userId }: NotificationSettingsProps) => {
       if (error) throw error;
       
       if (data?.notification_preferences) {
-        setPreferences(data.notification_preferences as NotificationPreferences);
+        const prefs = data.notification_preferences as any;
+        setPreferences({
+          break_reminders: prefs.break_reminders ?? true,
+          break_reminder_hours: prefs.break_reminder_hours ?? 6,
+          clock_out_reminders: prefs.clock_out_reminders ?? true,
+          clock_out_reminder_hour: prefs.clock_out_reminder_hour ?? 18,
+        });
       }
     } catch (error) {
       console.error('Error loading notification preferences:', error);
@@ -55,7 +61,7 @@ export const NotificationSettings = ({ userId }: NotificationSettingsProps) => {
     try {
       const { error } = await supabase
         .from('user_settings')
-        .update({ notification_preferences: newPreferences })
+        .update({ notification_preferences: newPreferences as any })
         .eq('user_id', userId);
 
       if (error) throw error;

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { UserSettings, NRW_HOLIDAYS_2025 } from '@/lib/types';
+import { NotificationSettings } from './NotificationSettings';
 import { toast } from 'sonner';
 import { RefreshCw, Trash2 } from 'lucide-react';
 
@@ -96,6 +97,11 @@ export const Settings = ({ settings, userId }: SettingsProps) => {
 
   return (
     <div className="space-y-6">
+      <h2 className="text-2xl font-bold">Einstellungen</h2>
+
+      {/* Notification Settings */}
+      <NotificationSettings userId={userId} />
+
       <Card className="p-4">
         <div className="flex justify-between items-center">
           <div>
