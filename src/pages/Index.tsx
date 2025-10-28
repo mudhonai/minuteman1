@@ -11,6 +11,7 @@ import { PWAUpdatePrompt } from '@/components/PWAUpdatePrompt';
 import { useTimeTracking } from '@/hooks/useTimeTracking';
 import { useAbsences } from '@/hooks/useAbsences';
 import { Button } from '@/components/ui/button';
+import { Clock } from 'lucide-react';
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
@@ -57,11 +58,7 @@ const Index = () => {
           <div className="flex justify-between items-center gap-2">
             <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
               <div className="bg-primary/20 p-1.5 md:p-2 rounded-xl border-2 border-primary flex-shrink-0">
-                <img 
-                  src="/pwa-192x192.png" 
-                  alt="Minuteman Logo" 
-                  className="h-8 w-8 md:h-10 md:w-10"
-                />
+                <Clock className="h-8 w-8 md:h-10 md:w-10 text-primary" />
               </div>
               <div className="min-w-0">
                 <h1 className="text-2xl md:text-4xl font-extrabold text-accent truncate">Minuteman</h1>
