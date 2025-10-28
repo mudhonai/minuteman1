@@ -54,21 +54,21 @@ const Index = () => {
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-lg mx-auto p-4 md:p-6">
         <header className="mb-6">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary/20 p-2 rounded-xl border-2 border-primary">
+          <div className="flex justify-between items-center gap-2">
+            <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
+              <div className="bg-primary/20 p-1.5 md:p-2 rounded-xl border-2 border-primary flex-shrink-0">
                 <img 
                   src="/pwa-192x192.png" 
                   alt="Minuteman Logo" 
-                  className="h-10 w-10"
+                  className="h-8 w-8 md:h-10 md:w-10"
                 />
               </div>
-              <div>
-                <h1 className="text-4xl font-extrabold text-accent">Minuteman</h1>
-                <p className="text-sm text-muted-foreground">IchWarDa - Dein Zeiterfassungs-Terminal</p>
+              <div className="min-w-0">
+                <h1 className="text-2xl md:text-4xl font-extrabold text-accent truncate">Minuteman</h1>
+                <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">IchWarDa - Dein Zeiterfassungs-Terminal</p>
               </div>
             </div>
-            <Button onClick={handleSignOut} variant="ghost" size="sm">
+            <Button onClick={handleSignOut} variant="ghost" size="sm" className="flex-shrink-0">
               Abmelden
             </Button>
           </div>
