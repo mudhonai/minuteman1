@@ -301,7 +301,7 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
                   </div>
                 )}
                 
-                {entry.is_surcharge_day && (
+                {entry.surcharge_minutes > 0 && (
                   <div className="mt-2 text-xs font-semibold px-2 py-1 bg-secondary/20 rounded inline-block text-secondary">
                     {entry.surcharge_label} (Wert: {formatMinutesToHHMM(entry.surcharge_amount)} Min)
                   </div>
