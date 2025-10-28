@@ -7,6 +7,7 @@ import { Settings } from '@/components/Settings';
 import { Absences } from '@/components/Absences';
 import { CalendarView } from '@/components/CalendarView';
 import { Statistics } from '@/components/Statistics';
+import { OvertimeAllowance } from '@/components/OvertimeAllowance';
 import { PWAUpdatePrompt } from '@/components/PWAUpdatePrompt';
 import { useTimeTracking } from '@/hooks/useTimeTracking';
 import { useAbsences } from '@/hooks/useAbsences';
@@ -14,7 +15,7 @@ import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'history' | 'absences' | 'calendar' | 'statistics' | 'settings'>('dashboard');
+  const [currentPage, setCurrentPage] = useState<'dashboard' | 'history' | 'absences' | 'calendar' | 'statistics' | 'usp' | 'settings'>('dashboard');
   
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -127,6 +128,16 @@ const Index = () => {
               Statistik
             </button>
             <button
+              onClick={() => setCurrentPage('usp')}
+              className={`px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
+                currentPage === 'usp'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              ÜSP
+            </button>
+            <button
               onClick={() => setCurrentPage('settings')}
               className={`px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
                 currentPage === 'settings'
@@ -170,6 +181,9 @@ const Index = () => {
               timeEntries={timeEntries}
               absences={absences}
             />
+          )}
+          {currentPage === 'usp' && (
+            <OvertimeAllowance userId={user.id} />
           )}
           {currentPage === 'settings' && settings && (
             <Settings settings={settings} userId={user.id} />

@@ -74,6 +74,45 @@ export type Database = {
         }
         Relationships: []
       }
+      overtime_allowance: {
+        Row: {
+          consumed_hours: number
+          created_at: string
+          id: string
+          is_fully_consumed: boolean
+          notes: string | null
+          start_date: string
+          total_hours: number
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          consumed_hours?: number
+          created_at?: string
+          id?: string
+          is_fully_consumed?: boolean
+          notes?: string | null
+          start_date: string
+          total_hours?: number
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          consumed_hours?: number
+          created_at?: string
+          id?: string
+          is_fully_consumed?: boolean
+          notes?: string | null
+          start_date?: string
+          total_hours?: number
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
       time_entries: {
         Row: {
           breaks: Json | null
