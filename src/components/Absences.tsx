@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,11 +11,21 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { AbsenceEntry, AbsenceType } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Trash2, Edit, CalendarIcon } from 'lucide-react';
+import { Plus, Trash2, Edit, CalendarIcon, TrendingDown } from 'lucide-react';
 import { format, eachDayOfInterval } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import type { DateRange } from 'react-day-picker';
+
+interface VacationAllowance {
+  id: string;
+  year: number;
+  total_days: number;
+  used_days: number;
+  remaining_days: number;
+  carried_over_days: number;
+  notes: string | null;
+}
 
 interface AbsencesProps {
   absences: AbsenceEntry[];
@@ -42,6 +52,87 @@ export const Absences = ({ absences }: AbsencesProps) => {
   const [absenceType, setAbsenceType] = useState<AbsenceType>('urlaub');
   const [hours, setHours] = useState('8.5');
   const [note, setNote] = useState('');
+  const [vacationAllowance, setVacationAllowance] = useState<VacationAllowance | null>(null);
+  const [isEditingAllowance, setIsEditingAllowance] = useState(false);
+  const [allowanceYear, setAllowanceYear] = useState(new Date().getFullYear());
+  const [totalDays, setTotalDays] = useState('30');
+  const [carriedOverDays, setCarriedOverDays] = useState('0');
+  const [allowanceNotes, setAllowanceNotes] = useState('');
+
+  useEffect(() => {
+    fetchVacationAllowance();
+  }, []);
+
+  const fetchVacationAllowance = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const currentYear = new Date().getFullYear();
+      const { data, error } = await supabase
+        .from('vacation_allowance')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('year', currentYear)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      setVacationAllowance(data);
+    } catch (error: any) {
+      console.error('Fehler beim Laden des Urlaubskontingents:', error);
+    }
+  };
+
+  const openAllowanceDialog = () => {
+    if (vacationAllowance) {
+      setAllowanceYear(vacationAllowance.year);
+      setTotalDays(vacationAllowance.total_days.toString());
+      setCarriedOverDays(vacationAllowance.carried_over_days.toString());
+      setAllowanceNotes(vacationAllowance.notes || '');
+    } else {
+      setAllowanceYear(new Date().getFullYear());
+      setTotalDays('30');
+      setCarriedOverDays('0');
+      setAllowanceNotes('');
+    }
+    setIsEditingAllowance(true);
+  };
+
+  const saveAllowance = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Nicht angemeldet');
+
+      const allowanceData = {
+        user_id: user.id,
+        year: allowanceYear,
+        total_days: parseFloat(totalDays),
+        carried_over_days: parseFloat(carriedOverDays),
+        notes: allowanceNotes.trim() || null,
+      };
+
+      if (vacationAllowance) {
+        const { error } = await supabase
+          .from('vacation_allowance')
+          .update(allowanceData)
+          .eq('id', vacationAllowance.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('vacation_allowance')
+          .insert({ ...allowanceData, used_days: 0 });
+
+        if (error) throw error;
+      }
+
+      toast.success('Urlaubskontingent gespeichert!');
+      setIsEditingAllowance(false);
+      fetchVacationAllowance();
+    } catch (error: any) {
+      toast.error(error.message || 'Fehler beim Speichern');
+    }
+  };
 
   const openAddDialog = () => {
     setEditingEntry(null);
@@ -165,6 +256,43 @@ export const Absences = ({ absences }: AbsencesProps) => {
           Abwesenheit hinzufügen
         </Button>
       </div>
+
+      {/* Vacation Allowance Card */}
+      <Card className="p-6 bg-gradient-to-r from-blue-500/10 to-blue-600/10 border-blue-500">
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingDown className="h-5 w-5 text-blue-500" />
+              <h3 className="text-lg font-bold">Urlaubskontingent {new Date().getFullYear()}</h3>
+            </div>
+            {vacationAllowance ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-sm opacity-70">Gesamt</p>
+                  <p className="text-2xl font-bold">{vacationAllowance.total_days} Tage</p>
+                </div>
+                <div>
+                  <p className="text-sm opacity-70">Verbraucht</p>
+                  <p className="text-2xl font-bold">{vacationAllowance.used_days.toFixed(1)} Tage</p>
+                </div>
+                <div>
+                  <p className="text-sm opacity-70">Resturlaub</p>
+                  <p className="text-2xl font-bold text-green-500">{vacationAllowance.remaining_days.toFixed(1)} Tage</p>
+                </div>
+                <div>
+                  <p className="text-sm opacity-70">Übertrag</p>
+                  <p className="text-2xl font-bold">{vacationAllowance.carried_over_days} Tage</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">Noch kein Urlaubskontingent angelegt.</p>
+            )}
+          </div>
+          <Button onClick={openAllowanceDialog} variant="outline" size="sm">
+            {vacationAllowance ? 'Bearbeiten' : 'Anlegen'}
+          </Button>
+        </div>
+      </Card>
 
       {/* Monthly Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -367,6 +495,62 @@ export const Absences = ({ absences }: AbsencesProps) => {
                 Speichern
               </Button>
               <Button onClick={closeDialog} variant="outline" className="flex-1">
+                Abbrechen
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Vacation Allowance Dialog */}
+      <Dialog open={isEditingAllowance} onOpenChange={setIsEditingAllowance}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {vacationAllowance ? 'Urlaubskontingent bearbeiten' : 'Urlaubskontingent anlegen'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Jahr</Label>
+              <Input
+                type="number"
+                value={allowanceYear}
+                onChange={(e) => setAllowanceYear(parseInt(e.target.value))}
+                disabled={!!vacationAllowance}
+              />
+            </div>
+            <div>
+              <Label>Urlaubstage gesamt</Label>
+              <Input
+                type="number"
+                step="0.5"
+                value={totalDays}
+                onChange={(e) => setTotalDays(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Übertragene Tage aus Vorjahr</Label>
+              <Input
+                type="number"
+                step="0.5"
+                value={carriedOverDays}
+                onChange={(e) => setCarriedOverDays(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Notizen (optional)</Label>
+              <Textarea
+                value={allowanceNotes}
+                onChange={(e) => setAllowanceNotes(e.target.value)}
+                placeholder="z.B. Sondervereinbarungen..."
+              />
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button onClick={saveAllowance} className="flex-1">
+                Speichern
+              </Button>
+              <Button onClick={() => setIsEditingAllowance(false)} variant="outline" className="flex-1">
                 Abbrechen
               </Button>
             </div>

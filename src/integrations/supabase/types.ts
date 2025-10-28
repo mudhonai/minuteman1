@@ -191,6 +191,45 @@ export type Database = {
         }
         Relationships: []
       }
+      vacation_allowance: {
+        Row: {
+          carried_over_days: number
+          created_at: string
+          id: string
+          notes: string | null
+          remaining_days: number | null
+          total_days: number
+          updated_at: string
+          used_days: number
+          user_id: string
+          year: number
+        }
+        Insert: {
+          carried_over_days?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          remaining_days?: number | null
+          total_days?: number
+          updated_at?: string
+          used_days?: number
+          user_id: string
+          year: number
+        }
+        Update: {
+          carried_over_days?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          remaining_days?: number | null
+          total_days?: number
+          updated_at?: string
+          used_days?: number
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
