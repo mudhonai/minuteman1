@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { TimeEntry, AbsenceEntry, TARGET_HOURS_DAILY } from '@/lib/types';
 import { formatMinutesToHHMM } from '@/lib/timeUtils';
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TrendingUp, TrendingDown, Minus, Calendar } from 'lucide-react';
 
 interface StatisticsProps {
   timeEntries: TimeEntry[];
@@ -22,6 +23,90 @@ const COLORS = {
 
 export const Statistics = ({ timeEntries, absences }: StatisticsProps) => {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('month');
+  const [comparisonMode, setComparisonMode] = useState(false);
+
+  // Get comparison data for previous period
+  const getComparisonStats = (entries: TimeEntry[], currentStart: Date) => {
+    let prevStart: Date;
+    let prevEnd: Date = new Date(currentStart);
+    prevEnd.setMilliseconds(prevEnd.getMilliseconds() - 1);
+
+    if (timeRange === 'week') {
+      prevStart = new Date(currentStart);
+      prevStart.setDate(prevStart.getDate() - 7);
+    } else if (timeRange === 'month') {
+      prevStart = new Date(currentStart);
+      prevStart.setMonth(prevStart.getMonth() - 1);
+    } else {
+      prevStart = new Date(currentStart);
+      prevStart.setFullYear(prevStart.getFullYear() - 1);
+    }
+
+    const prevEntries = entries.filter(e => {
+      const date = new Date(e.start_time);
+      return date >= prevStart && date <= prevEnd;
+    });
+
+    const prevHours = prevEntries.reduce((sum, e) => sum + e.net_work_duration_minutes, 0) / 60;
+    const prevOvertime = prevEntries.reduce((sum, e) => {
+      const dayOfWeek = new Date(e.start_time).getDay();
+      const targetForDay = TARGET_HOURS_DAILY[dayOfWeek] || 0;
+      const isWeekendOrHoliday = dayOfWeek === 0 || dayOfWeek === 6 || e.is_surcharge_day;
+      
+      if (isWeekendOrHoliday) {
+        return sum + e.net_work_duration_minutes;
+      }
+      return sum + Math.max(0, e.net_work_duration_minutes - targetForDay);
+    }, 0) / 60;
+
+    return { prevHours, prevOvertime, prevWorkDays: prevEntries.length };
+  };
+
+  // Get monthly trend data for the last 6 months
+  const getMonthlyTrends = () => {
+    const now = new Date();
+    const trends = [];
+    
+    for (let i = 5; i >= 0; i--) {
+      const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+      
+      const monthEntries = timeEntries.filter(e => {
+        const date = new Date(e.start_time);
+        return date >= monthStart && date <= monthEnd;
+      });
+
+      const monthAbsences = absences.filter(a => {
+        const [year, month, day] = a.date.split('-');
+        const absenceDate = new Date(Number(year), Number(month) - 1, Number(day));
+        return absenceDate >= monthStart && absenceDate <= monthEnd;
+      });
+
+      const hours = monthEntries.reduce((sum, e) => sum + e.net_work_duration_minutes, 0) / 60;
+      const overtime = monthEntries.reduce((sum, e) => {
+        const dayOfWeek = new Date(e.start_time).getDay();
+        const targetForDay = TARGET_HOURS_DAILY[dayOfWeek] || 0;
+        const isWeekendOrHoliday = dayOfWeek === 0 || dayOfWeek === 6 || e.is_surcharge_day;
+        
+        if (isWeekendOrHoliday) {
+          return sum + e.net_work_duration_minutes;
+        }
+        return sum + Math.max(0, e.net_work_duration_minutes - targetForDay);
+      }, 0) / 60;
+
+      const absenceHours = monthAbsences.reduce((sum, a) => sum + a.hours, 0);
+
+      trends.push({
+        month: monthStart.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' }),
+        hours: parseFloat(hours.toFixed(1)),
+        overtime: parseFloat(overtime.toFixed(1)),
+        absences: parseFloat(absenceHours.toFixed(1)),
+        workDays: monthEntries.length,
+      });
+    }
+    
+    return trends;
+  };
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -138,6 +223,14 @@ export const Statistics = ({ timeEntries, absences }: StatisticsProps) => {
     const totalAbsences = filteredAbsences.reduce((sum, a) => sum + a.hours, 0);
     const avgDailyHours = totalHours / Math.max(1, filteredEntries.length);
 
+    // Comparison data
+    const comparison = getComparisonStats(timeEntries, startDate);
+    const monthlyTrends = getMonthlyTrends();
+
+    // Calculate trend indicators
+    const hoursTrend = comparison.prevHours > 0 ? ((totalHours - comparison.prevHours) / comparison.prevHours) * 100 : 0;
+    const overtimeTrend = comparison.prevOvertime > 0 ? ((totalOvertime - comparison.prevOvertime) / comparison.prevOvertime) * 100 : 0;
+
     return {
       weeklyData: Object.values(weeklyData),
       overtimeData,
@@ -149,41 +242,69 @@ export const Statistics = ({ timeEntries, absences }: StatisticsProps) => {
       totalAbsences,
       avgDailyHours,
       workDays: filteredEntries.length,
+      comparison,
+      monthlyTrends,
+      hoursTrend,
+      overtimeTrend,
     };
   }, [timeEntries, absences, timeRange]);
+
+  const getTrendIcon = (trend: number) => {
+    if (trend > 5) return <TrendingUp className="h-4 w-4 text-green-500" />;
+    if (trend < -5) return <TrendingDown className="h-4 w-4 text-red-500" />;
+    return <Minus className="h-4 w-4 text-muted-foreground" />;
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Statistiken</h2>
-        <Select value={timeRange} onValueChange={(v: any) => setTimeRange(v)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="week">Diese Woche</SelectItem>
-            <SelectItem value="month">Dieser Monat</SelectItem>
-            <SelectItem value="year">Dieses Jahr</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <Select value={timeRange} onValueChange={(v: any) => setTimeRange(v)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="week">Diese Woche</SelectItem>
+              <SelectItem value="month">Dieser Monat</SelectItem>
+              <SelectItem value="year">Dieses Jahr</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* Summary Cards */}
+      {/* Summary Cards with Trends */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4">
           <p className="text-xs text-muted-foreground">Gesamt Stunden</p>
-          <p className="text-2xl font-bold text-primary">{stats.totalHours.toFixed(1)}h</p>
+          <div className="flex items-baseline gap-2">
+            <p className="text-2xl font-bold text-primary">{stats.totalHours.toFixed(1)}h</p>
+            {getTrendIcon(stats.hoursTrend)}
+          </div>
           <p className="text-xs text-muted-foreground mt-1">
             Ø {stats.avgDailyHours.toFixed(1)}h/Tag
           </p>
+          {comparisonMode && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Vorher: {stats.comparison.prevHours.toFixed(1)}h ({stats.hoursTrend > 0 ? '+' : ''}{stats.hoursTrend.toFixed(1)}%)
+            </p>
+          )}
         </Card>
         <Card className="p-4">
           <p className="text-xs text-muted-foreground">Überstunden</p>
-          <p className="text-2xl font-bold text-secondary">{stats.totalOvertime.toFixed(1)}h</p>
+          <div className="flex items-baseline gap-2">
+            <p className="text-2xl font-bold text-secondary">{stats.totalOvertime.toFixed(1)}h</p>
+            {getTrendIcon(stats.overtimeTrend)}
+          </div>
           <p className="text-xs text-muted-foreground mt-1">
             {stats.workDays} Arbeitstage
           </p>
+          {comparisonMode && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Vorher: {stats.comparison.prevOvertime.toFixed(1)}h ({stats.overtimeTrend > 0 ? '+' : ''}{stats.overtimeTrend.toFixed(1)}%)
+            </p>
+          )}
         </Card>
         <Card className="p-4">
           <p className="text-xs text-muted-foreground">Zuschläge</p>
@@ -194,6 +315,58 @@ export const Statistics = ({ timeEntries, absences }: StatisticsProps) => {
           <p className="text-2xl font-bold text-blue-500">{stats.totalAbsences.toFixed(1)}h</p>
         </Card>
       </div>
+
+      {/* Monthly Trends Chart */}
+      {stats.monthlyTrends.length > 0 && (
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold">6-Monats-Trend</h3>
+            <Calendar className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={stats.monthlyTrends}>
+              <defs>
+                <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="colorOvertime" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={COLORS.accent} stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor={COLORS.accent} stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+              <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+              <YAxis stroke="hsl(var(--muted-foreground))" />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))', 
+                  border: '1px solid hsl(var(--border))' 
+                }}
+              />
+              <Legend />
+              <Area 
+                type="monotone" 
+                dataKey="hours" 
+                name="Stunden" 
+                stroke={COLORS.primary} 
+                fillOpacity={1}
+                fill="url(#colorHours)"
+                strokeWidth={2}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="overtime" 
+                name="Überstunden" 
+                stroke={COLORS.accent} 
+                fillOpacity={1}
+                fill="url(#colorOvertime)"
+                strokeWidth={2}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </Card>
+      )}
 
       {/* Weekly Hours Chart */}
       {stats.weeklyData.length > 0 && (
