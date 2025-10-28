@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { UserSettings, NRW_HOLIDAYS_2025 } from '@/lib/types';
 import { toast } from 'sonner';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Trash2 } from 'lucide-react';
 
 interface SettingsProps {
   settings: UserSettings | null;
@@ -72,6 +72,25 @@ export const Settings = ({ settings, userId }: SettingsProps) => {
       toast.error(error.message || 'Fehler bei der Neuberechnung');
     } finally {
       setIsRecalculating(false);
+    }
+  };
+
+  const clearCache = async () => {
+    try {
+      // Clear all caches
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map(name => caches.delete(name)));
+      
+      // Unregister service workers
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map(reg => reg.unregister()));
+      }
+      
+      toast.success('Cache gelöscht! App wird neu geladen...');
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (error: any) {
+      toast.error('Fehler beim Löschen des Caches');
     }
   };
 
@@ -141,6 +160,21 @@ export const Settings = ({ settings, userId }: SettingsProps) => {
         >
           <RefreshCw className={`mr-2 h-4 w-4 ${isRecalculating ? 'animate-spin' : ''}`} />
           {isRecalculating ? 'Berechne neu...' : 'Alle Zuschläge neu berechnen'}
+        </Button>
+      </Card>
+
+      <Card className="p-4 border-destructive/50">
+        <h3 className="text-xl font-semibold mb-3 text-destructive">PWA Cache löschen</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Falls Änderungen nicht sichtbar werden, kannst du hier den kompletten App-Cache löschen und die App neu starten.
+        </p>
+        <Button 
+          onClick={clearCache}
+          variant="destructive"
+          className="w-full"
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Cache löschen & App neu starten
         </Button>
       </Card>
     </div>
