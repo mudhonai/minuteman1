@@ -166,27 +166,42 @@ export type Database = {
       }
       user_settings: {
         Row: {
+          auto_clock_in_enabled: boolean | null
+          auto_clock_out_enabled: boolean | null
           break_reminder_enabled: boolean
           created_at: string
           custom_holidays: Json | null
+          geofence_locations: Json | null
+          geofence_radius_meters: number | null
+          geofencing_enabled: boolean | null
           id: string
           notification_preferences: Json | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          auto_clock_in_enabled?: boolean | null
+          auto_clock_out_enabled?: boolean | null
           break_reminder_enabled?: boolean
           created_at?: string
           custom_holidays?: Json | null
+          geofence_locations?: Json | null
+          geofence_radius_meters?: number | null
+          geofencing_enabled?: boolean | null
           id?: string
           notification_preferences?: Json | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          auto_clock_in_enabled?: boolean | null
+          auto_clock_out_enabled?: boolean | null
           break_reminder_enabled?: boolean
           created_at?: string
           custom_holidays?: Json | null
+          geofence_locations?: Json | null
+          geofence_radius_meters?: number | null
+          geofencing_enabled?: boolean | null
           id?: string
           notification_preferences?: Json | null
           updated_at?: string

@@ -1,13 +1,23 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { UserSettings, NRW_HOLIDAYS_2025 } from '@/lib/types';
-import { NotificationSettings } from './NotificationSettings';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { UserSettings } from '@/lib/types';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { RefreshCw, Trash2 } from 'lucide-react';
+import { Trash2, Plus } from 'lucide-react';
+import { NotificationSettings } from './NotificationSettings';
+import { GeofencingSettings } from './GeofencingSettings';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Checkbox } from '@/components/ui/checkbox';
+import { NRW_HOLIDAYS_2025 } from '@/lib/types';
+import { RefreshCw } from 'lucide-react';
 
 interface SettingsProps {
   settings: UserSettings | null;
@@ -99,8 +109,28 @@ export const Settings = ({ settings, userId }: SettingsProps) => {
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Einstellungen</h2>
 
-      {/* Notification Settings */}
-      <NotificationSettings userId={userId} />
+      {/* Accordion for grouped settings */}
+      <Accordion type="single" collapsible className="space-y-4">
+        {/* Notification Settings */}
+        <AccordionItem value="notifications">
+          <AccordionTrigger className="text-lg font-semibold">
+            Push-Benachrichtigungen
+          </AccordionTrigger>
+          <AccordionContent>
+            <NotificationSettings userId={userId} />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Geofencing Settings */}
+        <AccordionItem value="geofencing">
+          <AccordionTrigger className="text-lg font-semibold">
+            Geofencing
+          </AccordionTrigger>
+          <AccordionContent>
+            <GeofencingSettings userId={userId} />
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
 
       <Card className="p-4">
         <div className="flex justify-between items-center">
