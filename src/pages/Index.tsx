@@ -11,11 +11,34 @@ import { OvertimeAllowance } from '@/components/OvertimeAllowance';
 import { PWAUpdatePrompt } from '@/components/PWAUpdatePrompt';
 import { useTimeTracking } from '@/hooks/useTimeTracking';
 import { useAbsences } from '@/hooks/useAbsences';
+import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState<'dashboard' | 'history' | 'absences' | 'calendar' | 'statistics' | 'usp' | 'settings'>('dashboard');
+  
+  const pages = ['dashboard', 'history', 'absences', 'calendar', 'statistics', 'usp', 'settings'] as const;
+  
+  const navigateLeft = () => {
+    const currentIndex = pages.indexOf(currentPage);
+    if (currentIndex < pages.length - 1) {
+      setCurrentPage(pages[currentIndex + 1]);
+    }
+  };
+  
+  const navigateRight = () => {
+    const currentIndex = pages.indexOf(currentPage);
+    if (currentIndex > 0) {
+      setCurrentPage(pages[currentIndex - 1]);
+    }
+  };
+  
+  useSwipeNavigation({
+    onSwipeLeft: navigateLeft,
+    onSwipeRight: navigateRight,
+    threshold: 75,
+  });
   
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -150,7 +173,7 @@ const Index = () => {
           </div>
         </nav>
 
-        <main>
+        <main className="transition-all duration-300 ease-out">
           {currentPage === 'dashboard' && (
             <Dashboard
               currentEntry={currentEntry}
