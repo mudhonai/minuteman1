@@ -165,6 +165,7 @@ const Index = () => {
             <History 
               timeEntries={timeEntries} 
               customHolidays={settings?.custom_holidays || []}
+              absences={absences}
             />
           )}
           {currentPage === 'absences' && (

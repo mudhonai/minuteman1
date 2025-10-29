@@ -4,18 +4,31 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { TimeEntry, Break, TARGET_HOURS_DAILY } from '@/lib/types';
+import { TimeEntry, Break, TARGET_HOURS_DAILY, AbsenceEntry, AbsenceType } from '@/lib/types';
 import { formatMinutesToHHMM, formatGermanDateTime, formatDateForHistory, calculateNetWorkDuration, calculateSurcharge } from '@/lib/timeUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Pencil, Trash2, Plus, X, TrendingUp } from 'lucide-react';
+import { Pencil, Trash2, Plus, X, TrendingUp, Calendar } from 'lucide-react';
 
 interface HistoryProps {
   timeEntries: TimeEntry[];
   customHolidays: string[];
+  absences: AbsenceEntry[];
 }
 
-export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
+const ABSENCE_LABELS: Record<AbsenceType, string> = {
+  urlaub: 'Urlaub',
+  juep: 'JÜP',
+  krankheit: 'Krankheit',
+};
+
+const ABSENCE_COLORS: Record<AbsenceType, string> = {
+  urlaub: 'bg-blue-500/10 border-blue-500',
+  juep: 'bg-green-500/10 border-green-500',
+  krankheit: 'bg-red-500/10 border-red-500',
+};
+
+export const History = ({ timeEntries, customHolidays, absences }: HistoryProps) => {
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [startTime, setStartTime] = useState('');
@@ -25,9 +38,21 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
   const openEditDialog = (entry: TimeEntry) => {
     setEditingEntry(entry);
     setIsAddingNew(false);
-    setStartTime(entry.start_time.substring(0, 16));
-    setEndTime(entry.end_time.substring(0, 16));
+    // Konvertiere UTC zu lokaler Zeit für datetime-local Input
+    const startLocal = new Date(entry.start_time);
+    const endLocal = new Date(entry.end_time);
+    setStartTime(formatDateTimeLocal(startLocal));
+    setEndTime(formatDateTimeLocal(endLocal));
     setBreaks([...entry.breaks]);
+  };
+
+  const formatDateTimeLocal = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
   const openAddDialog = () => {
@@ -61,8 +86,8 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
 
   const updateBreak = (index: number, field: 'start' | 'end', value: string) => {
     const newBreaks = [...breaks];
-    // datetime-local gibt bereits lokale Zeit zurück, wir müssen nur ":00.000Z" anhängen
-    newBreaks[index] = { ...newBreaks[index], [field]: value ? value + ':00.000Z' : null };
+    // Konvertiere lokale Zeit zu ISO String
+    newBreaks[index] = { ...newBreaks[index], [field]: value ? new Date(value).toISOString() : null };
     setBreaks(newBreaks);
   };
 
@@ -71,9 +96,9 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
       console.log('saveEntry started, isAddingNew:', isAddingNew);
       console.log('startTime:', startTime, 'endTime:', endTime, 'breaks:', breaks);
       
-      // datetime-local gibt bereits lokale Zeit zurück
-      const startISO = startTime + ':00.000Z';
-      const endISO = endTime + ':00.000Z';
+      // Konvertiere lokale Zeit zu ISO String
+      const startISO = new Date(startTime).toISOString();
+      const endISO = new Date(endTime).toISOString();
 
       const { netMinutes, totalBreakMs } = calculateNetWorkDuration(startISO, endISO, breaks);
       const surcharge = calculateSurcharge(startISO, netMinutes, customHolidays);
@@ -252,6 +277,20 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
     );
   }
 
+  // Kombiniere und sortiere Zeiteinträge und Abwesenheiten nach Datum
+  const combinedEntries = [
+    ...timeEntries.map(entry => ({
+      type: 'time' as const,
+      date: entry.start_time,
+      data: entry
+    })),
+    ...absences.map(absence => ({
+      type: 'absence' as const,
+      date: absence.date + 'T12:00:00',
+      data: absence
+    }))
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
   return (
     <>
       <div className="space-y-4">
@@ -259,7 +298,35 @@ export const History = ({ timeEntries, customHolidays }: HistoryProps) => {
           <Plus className="h-4 w-4" />
           Neuen Tag hinzufügen
         </Button>
-        {timeEntries.map((entry) => {
+        {combinedEntries.map((item, index) => {
+          if (item.type === 'absence') {
+            const absence = item.data as AbsenceEntry;
+            return (
+              <Card key={`absence-${absence.id}`} className={`p-4 border-l-4 ${ABSENCE_COLORS[absence.absence_type]}`}>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-bold flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        {absence.date.split('-').reverse().join('.')}
+                      </h3>
+                      <span className="text-xl font-extrabold">{absence.hours}h</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {ABSENCE_LABELS[absence.absence_type]}
+                    </p>
+                    {absence.note && (
+                      <p className="text-sm mt-2 text-muted-foreground italic">
+                        {absence.note}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            );
+          }
+
+          const entry = item.data as TimeEntry;
           const entryDate = new Date(entry.start_time);
           const dayOfWeek = entryDate.getDay();
           const targetMinutes = TARGET_HOURS_DAILY[dayOfWeek] || 0;
