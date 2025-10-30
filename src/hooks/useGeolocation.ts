@@ -13,8 +13,10 @@ export const useGeolocation = (enabled: boolean = false) => {
   const [permission, setPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
 
   useEffect(() => {
-    if (!enabled || !('geolocation' in navigator)) {
-      setError('Geolocation wird nicht unterstützt');
+    if (!enabled) return;
+    
+    if (!('geolocation' in navigator)) {
+      setError('Dein Gerät unterstützt keine Standortbestimmung');
       return;
     }
 
@@ -38,13 +40,28 @@ export const useGeolocation = (enabled: boolean = false) => {
         setLoading(false);
       },
       (err) => {
-        setError(err.message);
+        let errorMessage = 'Standort konnte nicht ermittelt werden';
+        
+        switch(err.code) {
+          case err.PERMISSION_DENIED:
+            errorMessage = 'Standortberechtigung wurde verweigert. Bitte in den Browser-Einstellungen erlauben.';
+            setPermission('denied');
+            break;
+          case err.POSITION_UNAVAILABLE:
+            errorMessage = 'Standort nicht verfügbar. GPS-Signal prüfen.';
+            break;
+          case err.TIMEOUT:
+            errorMessage = 'Zeitüberschreitung beim Ermitteln des Standorts. Bitte erneut versuchen.';
+            break;
+        }
+        
+        setError(errorMessage);
         setLoading(false);
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
+        timeout: 30000, // 30 Sekunden statt 10
+        maximumAge: 5000, // 5 Sekunden Cache
       }
     );
 
@@ -55,11 +72,12 @@ export const useGeolocation = (enabled: boolean = false) => {
 
   const requestPermission = async () => {
     if (!('geolocation' in navigator)) {
-      setError('Geolocation wird nicht unterstützt');
+      setError('Dein Gerät unterstützt keine Standortbestimmung');
       return false;
     }
 
     try {
+      setLoading(true);
       const result = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
@@ -69,17 +87,36 @@ export const useGeolocation = (enabled: boolean = false) => {
               accuracy: pos.coords.accuracy,
             });
           },
-          (err) => reject(err),
-          { enableHighAccuracy: true }
+          (err) => {
+            let errorMessage = 'Standort konnte nicht ermittelt werden';
+            
+            switch(err.code) {
+              case err.PERMISSION_DENIED:
+                errorMessage = 'Standortberechtigung wurde verweigert';
+                break;
+              case err.POSITION_UNAVAILABLE:
+                errorMessage = 'Standort nicht verfügbar';
+                break;
+              case err.TIMEOUT:
+                errorMessage = 'Zeitüberschreitung beim Ermitteln des Standorts';
+                break;
+            }
+            
+            reject(new Error(errorMessage));
+          },
+          { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 }
         );
       });
 
       setPosition(result);
       setPermission('granted');
+      setError(null);
+      setLoading(false);
       return true;
     } catch (err: any) {
       setError(err.message);
       setPermission('denied');
+      setLoading(false);
       return false;
     }
   };
