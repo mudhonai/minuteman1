@@ -36,31 +36,39 @@ export const useGeofencing = ({
   useEffect(() => {
     if (!enabled || !position || !locations.length || processingRef.current) return;
 
+    console.log('🔍 Geofencing Check:', { enabled, hasPosition: !!position, locationCount: locations.length, currentStatus });
+
     // Prüfe ob wir in einer Geofence sind
-    const isInside = locations.some(loc =>
-      isWithinGeofence(
+    const isInside = locations.some(loc => {
+      const inside = isWithinGeofence(
         position.latitude,
         position.longitude,
         loc.latitude,
         loc.longitude,
         radiusMeters
-      )
-    );
+      );
+      console.log(`📍 Location ${loc.name}: ${inside ? 'INSIDE' : 'OUTSIDE'} (radius: ${radiusMeters}m)`);
+      return inside;
+    });
 
     const currentGeoStatus: 'inside' | 'outside' = isInside ? 'inside' : 'outside';
+    console.log('🎯 Geofence Status:', currentGeoStatus, 'Previous:', lastStatusRef.current);
 
     // Nur bei Statusänderung reagieren
     if (currentGeoStatus !== lastStatusRef.current) {
+      console.log('🔄 Status changed from', lastStatusRef.current, 'to', currentGeoStatus);
       lastStatusRef.current = currentGeoStatus;
 
       // Auto Clock-In: von outside nach inside gewechselt + idle
       if (currentGeoStatus === 'inside' && autoClockInEnabled && currentStatus === 'idle') {
+        console.log('✅ Triggering auto clock-in');
         processingRef.current = true;
         handleAutoClockIn();
       }
 
       // Auto Clock-Out: von inside nach outside gewechselt + working/break
       if (currentGeoStatus === 'outside' && autoClockOutEnabled && currentStatus !== 'idle') {
+        console.log('✅ Triggering auto clock-out');
         processingRef.current = true;
         handleAutoClockOut();
       }
@@ -69,6 +77,8 @@ export const useGeofencing = ({
 
   const handleAutoClockIn = async () => {
     try {
+      console.log('🚀 Starting auto clock-in for user:', userId);
+      
       const { error } = await supabase
         .from('current_entry')
         .insert({
@@ -78,11 +88,16 @@ export const useGeofencing = ({
           breaks: []
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Auto clock-in DB error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Auto clock-in successful');
       toast.success('🎯 Automatisch eingecheckt (Geofencing)');
     } catch (err: any) {
-      console.error('Auto clock-in error:', err);
-      toast.error('Fehler beim automatischen Einchecken');
+      console.error('❌ Auto clock-in error:', err);
+      toast.error('Fehler beim automatischen Einchecken: ' + err.message);
     } finally {
       processingRef.current = false;
     }
@@ -90,6 +105,8 @@ export const useGeofencing = ({
 
   const handleAutoClockOut = async () => {
     try {
+      console.log('🚀 Starting auto clock-out for user:', userId);
+      
       // Hole aktuellen Eintrag
       const { data: currentEntry, error: fetchError } = await supabase
         .from('current_entry')
@@ -98,8 +115,11 @@ export const useGeofencing = ({
         .single();
 
       if (fetchError || !currentEntry) {
+        console.error('❌ No active entry found:', fetchError);
         throw new Error('Kein aktiver Eintrag gefunden');
       }
+
+      console.log('📋 Current entry found:', currentEntry);
 
       const endTime = new Date().toISOString();
       const breaks = Array.isArray(currentEntry.breaks) 
@@ -114,6 +134,7 @@ export const useGeofencing = ({
         const lastBreak = breaks[breaks.length - 1];
         if (lastBreak && !lastBreak.end) {
           lastBreak.end = endTime;
+          console.log('⏸️ Auto-ended active break');
         }
       }
 
@@ -138,19 +159,13 @@ export const useGeofencing = ({
       if (actualBreakMinutes < requiredBreakMinutes) {
         const missingBreakMinutes = requiredBreakMinutes - actualBreakMinutes;
         actualBreakMs += missingBreakMinutes * 60 * 1000;
+        console.log('⏱️ Added missing break minutes:', missingBreakMinutes);
       }
 
       const netMinutes = Math.max(0, Math.round((grossWorkMs - actualBreakMs) / (1000 * 60)));
+      console.log('📊 Calculated work time:', netMinutes, 'minutes');
 
-      // Delete current entry first
-      const { error: deleteError } = await supabase
-        .from('current_entry')
-        .delete()
-        .eq('user_id', userId);
-
-      if (deleteError) throw deleteError;
-
-      // Save finished entry
+      // KRITISCH: Erst speichern, dann löschen!
       const { error: insertError } = await supabase
         .from('time_entries')
         .insert({
@@ -168,12 +183,29 @@ export const useGeofencing = ({
           surcharge_label: 'Regulär',
         });
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('❌ Failed to save time entry:', insertError);
+        throw insertError;
+      }
 
+      console.log('✅ Time entry saved successfully');
+
+      // Jetzt erst löschen
+      const { error: deleteError } = await supabase
+        .from('current_entry')
+        .delete()
+        .eq('user_id', userId);
+
+      if (deleteError) {
+        console.error('❌ Failed to delete current entry:', deleteError);
+        throw deleteError;
+      }
+
+      console.log('✅ Current entry deleted');
       toast.success('🎯 Automatisch ausgecheckt (Geofencing)');
     } catch (err: any) {
-      console.error('Auto clock-out error:', err);
-      toast.error('Fehler beim automatischen Auschecken');
+      console.error('❌ Auto clock-out error:', err);
+      toast.error('Fehler beim automatischen Auschecken: ' + err.message);
     } finally {
       processingRef.current = false;
     }
