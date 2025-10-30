@@ -53,7 +53,11 @@ export const useTimeTracking = (userId: string | undefined) => {
           .maybeSingle();
 
         if (userSettings) {
-          setSettings(userSettings as UserSettings);
+          setSettings({
+            ...userSettings,
+            custom_holidays: Array.isArray(userSettings.custom_holidays) ? userSettings.custom_holidays as any : [],
+            geofence_locations: Array.isArray(userSettings.geofence_locations) ? userSettings.geofence_locations as any : [],
+          } as any as UserSettings);
         } else {
           // Create default settings
           const { data: newSettings } = await supabase
@@ -66,7 +70,13 @@ export const useTimeTracking = (userId: string | undefined) => {
             .select()
             .single();
           
-          if (newSettings) setSettings(newSettings as UserSettings);
+          if (newSettings) {
+            setSettings({
+              ...newSettings,
+              custom_holidays: Array.isArray(newSettings.custom_holidays) ? newSettings.custom_holidays as any : [],
+              geofence_locations: Array.isArray(newSettings.geofence_locations) ? newSettings.geofence_locations as any : [],
+            } as any as UserSettings);
+          }
         }
       } catch (error: any) {
         console.error('Error loading data:', error);

@@ -60,6 +60,16 @@ export interface UserSettings {
   user_id: string;
   break_reminder_enabled: boolean;
   custom_holidays: string[];
+  geofencing_enabled?: boolean;
+  geofence_locations?: Array<{
+    id: string;
+    name: string;
+    latitude: number;
+    longitude: number;
+  }>;
+  geofence_radius_meters?: number;
+  auto_clock_in_enabled?: boolean;
+  auto_clock_out_enabled?: boolean;
   created_at?: string;
   updated_at?: string;
 }

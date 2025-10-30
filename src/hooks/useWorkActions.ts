@@ -137,15 +137,8 @@ export const useWorkActions = (userId: string | undefined, customHolidays: strin
         customHolidays
       );
 
-      // Delete current entry first
-      const { error: deleteError } = await supabase
-        .from('current_entry')
-        .delete()
-        .eq('user_id', userId);
-
-      if (deleteError) throw deleteError;
-
-      // Save finished entry
+      // WICHTIG: Erst neuen Eintrag speichern, DANN current_entry löschen
+      // So geht keine Daten verloren wenn Insert fehlschlägt
       const { error: insertError } = await supabase
         .from('time_entries')
         .insert({
@@ -164,6 +157,14 @@ export const useWorkActions = (userId: string | undefined, customHolidays: strin
         });
 
       if (insertError) throw insertError;
+
+      // Nur wenn Insert erfolgreich war, current_entry löschen
+      const { error: deleteError } = await supabase
+        .from('current_entry')
+        .delete()
+        .eq('user_id', userId);
+
+      if (deleteError) throw deleteError;
 
       toast.success('Arbeitstag erfolgreich abgeschlossen!');
     } catch (error: any) {
