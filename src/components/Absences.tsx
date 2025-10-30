@@ -261,6 +261,28 @@ export const Absences = ({ absences }: AbsencesProps) => {
         </Button>
       </div>
 
+      {/* Monthly Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-4 bg-blue-500/10 border-blue-500">
+          <p className="text-sm opacity-80">Urlaub (Monat)</p>
+          <h3 className="text-2xl font-bold">
+            {Object.values(monthlyStats)[0]?.urlaub.toFixed(1) || '0.0'}h
+          </h3>
+        </Card>
+        <Card className="p-4 bg-green-500/10 border-green-500">
+          <p className="text-sm opacity-80">JÜP (Monat)</p>
+          <h3 className="text-2xl font-bold">
+            {Object.values(monthlyStats)[0]?.juep.toFixed(1) || '0.0'}h
+          </h3>
+        </Card>
+        <Card className="p-4 bg-red-500/10 border-red-500">
+          <p className="text-sm opacity-80">Krankheit (Monat)</p>
+          <h3 className="text-2xl font-bold">
+            {Object.values(monthlyStats)[0]?.krankheit.toFixed(1) || '0.0'}h
+          </h3>
+        </Card>
+      </div>
+
       {/* Vacation Allowance Card */}
       <Card className="p-6 bg-gradient-to-r from-blue-500/10 to-blue-600/10 border-blue-500">
         <div className="flex justify-between items-start">
@@ -297,28 +319,6 @@ export const Absences = ({ absences }: AbsencesProps) => {
           </Button>
         </div>
       </Card>
-
-      {/* Monthly Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4 bg-blue-500/10 border-blue-500">
-          <p className="text-sm opacity-80">Urlaub (Monat)</p>
-          <h3 className="text-2xl font-bold">
-            {Object.values(monthlyStats)[0]?.urlaub.toFixed(1) || '0.0'}h
-          </h3>
-        </Card>
-        <Card className="p-4 bg-green-500/10 border-green-500">
-          <p className="text-sm opacity-80">JÜP (Monat)</p>
-          <h3 className="text-2xl font-bold">
-            {Object.values(monthlyStats)[0]?.juep.toFixed(1) || '0.0'}h
-          </h3>
-        </Card>
-        <Card className="p-4 bg-red-500/10 border-red-500">
-          <p className="text-sm opacity-80">Krankheit (Monat)</p>
-          <h3 className="text-2xl font-bold">
-            {Object.values(monthlyStats)[0]?.krankheit.toFixed(1) || '0.0'}h
-          </h3>
-        </Card>
-      </div>
 
       {/* Absence List */}
       <div className="space-y-3">

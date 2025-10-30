@@ -261,17 +261,6 @@ export const OvertimeAllowance = ({ userId }: OvertimeAllowanceProps) => {
         </Card>
       )}
 
-      {/* Info-Box */}
-      <Card className="p-6 bg-muted/50">
-        <h3 className="font-semibold mb-2">ℹ️ Wie funktioniert die ÜSP?</h3>
-        <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-          <li>Jedes Jahr am 01.01. beginnt eine neue 150-Stunden-Pauschale</li>
-          <li>Überstunden werden zunächst gegen diese Pauschale verrechnet</li>
-          <li>Erst nach Verbrauch der 150 Stunden werden Überstunden angerechnet</li>
-          <li>Für 2025 ist die ÜSP bereits vollständig abgegolten</li>
-          <li>Ab 01.01.2026 beginnt die neue Zählung</li>
-        </ul>
-      </Card>
     </div>
   );
 };

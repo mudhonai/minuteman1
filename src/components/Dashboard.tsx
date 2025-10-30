@@ -198,7 +198,7 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
       <Card className={`p-4 ${getStatusCardClass()} border-2 shadow-lg transition-all`}>
         <h2 className="text-xl font-bold">{getStatusText()}</h2>
         <p className="text-sm opacity-80 mt-1">
-          {currentEntry && status !== 'idle' ? `Gestartet: ${formatGermanDateTime(currentEntry.start_time)}` : 'Klicke auf "Arbeitsbeginn", um den Tag zu starten.'}
+          {currentEntry && status !== 'idle' ? `Gestartet: ${formatGermanDateTime(currentEntry.start_time)}` : 'Klicke auf "Arbeitsbeginn", um einen angenehmen Tag auf der Messe zu verbringen.'}
         </p>
       </Card>
 
