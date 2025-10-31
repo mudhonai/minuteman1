@@ -287,6 +287,9 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
           <Card className="p-4 bg-secondary/10 border-secondary">
             <p className="text-sm opacity-80">Zuschlagsminuten</p>
             <h3 className="text-2xl font-extrabold mt-1">{formatMinutesToHHMM(dashboardData.todaySurchargeMinutes)}</h3>
+            <p className="text-xs mt-1 opacity-70">
+              Wert: {formatMinutesToHHMM(Math.round(dashboardData.todaySurchargeMinutes * 1.3))}
+            </p>
           </Card>
         </div>
 
@@ -336,13 +339,19 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
           </Card>
 
           <Card className="p-4 bg-secondary/10">
-            <p className="text-sm opacity-80">Woche Zuschlagswert</p>
+            <p className="text-sm opacity-80">Woche Zuschlagsminuten</p>
             <h3 className="text-xl font-bold text-secondary">{formatMinutesToHHMM(dashboardData.weekSurchargeAmount)}</h3>
+            <p className="text-xs mt-1 opacity-70">
+              Wert: {formatMinutesToHHMM(Math.round(dashboardData.weekSurchargeAmount * 1.3))}
+            </p>
           </Card>
 
           <Card className="p-4 bg-secondary/10">
-            <p className="text-sm opacity-80">Monat Zuschlagswert</p>
+            <p className="text-sm opacity-80">Monat Zuschlagsminuten</p>
             <h3 className="text-xl font-bold text-secondary">{formatMinutesToHHMM(dashboardData.monthSurchargeAmount)}</h3>
+            <p className="text-xs mt-1 opacity-70">
+              Wert: {formatMinutesToHHMM(Math.round(dashboardData.monthSurchargeAmount * 1.3))}
+            </p>
           </Card>
         </div>
       </div>
