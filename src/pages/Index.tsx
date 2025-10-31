@@ -14,6 +14,7 @@ import { useAbsences } from '@/hooks/useAbsences';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { useGeofencing } from '@/hooks/useGeofencing';
 import { Button } from '@/components/ui/button';
+import marbleBackground from '@/assets/marble-background.jpg';
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
@@ -85,8 +86,20 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-lg mx-auto p-4 md:p-6">
+    <div 
+      className="min-h-screen text-foreground"
+      style={{
+        backgroundImage: `url(${marbleBackground})`,
+        backgroundSize: 'cover',
+        backgroundAttachment: 'fixed',
+        backgroundPosition: 'center'
+      }}
+    >
+      <div className="max-w-lg mx-auto p-4 md:p-6"
+        style={{
+          backdropFilter: 'blur(0px)'
+        }}
+      >
         <header className="mb-6">
           <div className="flex justify-between items-center gap-2">
             <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
