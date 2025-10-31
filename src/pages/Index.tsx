@@ -56,12 +56,10 @@ const Index = () => {
   const { currentEntry, timeEntries, settings, loading, status } = useTimeTracking(user?.id);
   const { absences, loading: absencesLoading } = useAbsences(user?.id);
 
-  // Geofencing Hook
+  // Geofencing Hook - Toggle bei jedem Betreten
   useGeofencing({
     userId: user?.id || '',
     enabled: settings?.geofencing_enabled || false,
-    autoClockInEnabled: settings?.auto_clock_in_enabled || false,
-    autoClockOutEnabled: settings?.auto_clock_out_enabled || false,
     locations: settings?.geofence_locations || [],
     radiusMeters: settings?.geofence_radius_meters || 100,
     currentStatus: status,

@@ -13,8 +13,6 @@ interface GeofenceLocation {
 interface UseGeofencingProps {
   userId: string;
   enabled: boolean;
-  autoClockInEnabled: boolean;
-  autoClockOutEnabled: boolean;
   locations: GeofenceLocation[];
   radiusMeters: number;
   currentStatus: 'idle' | 'working' | 'break';
@@ -23,8 +21,6 @@ interface UseGeofencingProps {
 export const useGeofencing = ({
   userId,
   enabled,
-  autoClockInEnabled,
-  autoClockOutEnabled,
   locations,
   radiusMeters,
   currentStatus,
@@ -54,26 +50,26 @@ export const useGeofencing = ({
     const currentGeoStatus: 'inside' | 'outside' = isInside ? 'inside' : 'outside';
     console.log('🎯 Geofence Status:', currentGeoStatus, 'Previous:', lastStatusRef.current);
 
-    // Nur bei Statusänderung reagieren
-    if (currentGeoStatus !== lastStatusRef.current) {
-      console.log('🔄 Status changed from', lastStatusRef.current, 'to', currentGeoStatus);
+    // NEUE LOGIK: Nur beim BETRETEN (outside → inside) reagieren und Status togglen
+    if (currentGeoStatus === 'inside' && lastStatusRef.current === 'outside') {
+      console.log('🚪 Standort BETRETEN - Toggle Status');
       lastStatusRef.current = currentGeoStatus;
+      processingRef.current = true;
 
-      // Auto Clock-In: von outside nach inside gewechselt + idle
-      if (currentGeoStatus === 'inside' && autoClockInEnabled && currentStatus === 'idle') {
-        console.log('✅ Triggering auto clock-in');
-        processingRef.current = true;
+      if (currentStatus === 'idle') {
+        console.log('✅ Status idle → Triggering auto clock-in');
         handleAutoClockIn();
-      }
-
-      // Auto Clock-Out: von inside nach outside gewechselt + working/break
-      if (currentGeoStatus === 'outside' && autoClockOutEnabled && currentStatus !== 'idle') {
-        console.log('✅ Triggering auto clock-out');
-        processingRef.current = true;
+      } else {
+        console.log('✅ Status working/break → Triggering auto clock-out');
         handleAutoClockOut();
       }
+    } 
+    // Status-Update auch beim Verlassen, aber keine Aktion
+    else if (currentGeoStatus === 'outside' && lastStatusRef.current === 'inside') {
+      console.log('🚶 Standort VERLASSEN - keine Aktion, bleibe im aktuellen Status');
+      lastStatusRef.current = currentGeoStatus;
     }
-  }, [position, enabled, locations, radiusMeters, currentStatus, autoClockInEnabled, autoClockOutEnabled]);
+  }, [position, enabled, locations, radiusMeters, currentStatus]);
 
   const handleAutoClockIn = async () => {
     try {
