@@ -100,10 +100,6 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
-    background-image: url('/src/assets/marble-background.jpg');
-    background-size: cover;
-    background-attachment: fixed;
-    background-position: center;
+    @apply text-foreground;
   }
 }
