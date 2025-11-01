@@ -36,7 +36,6 @@ export const useGeofencing = ({
 
   useEffect(() => {
     if (!enabled || !position || !locations.length) {
-      console.log('🔍 Geofencing disabled or not ready:', { enabled, hasPosition: !!position, locationCount: locations.length });
       return;
     }
 
@@ -44,7 +43,6 @@ export const useGeofencing = ({
     const now = Date.now();
     const timeSinceLastAction = now - lastActionTimeRef.current;
     if (processingRef.current && timeSinceLastAction < 30000) {
-      console.log('⏳ Geofencing action still processing or too soon');
       return;
     }
     
@@ -83,7 +81,6 @@ export const useGeofencing = ({
     });
 
     const currentGeoStatus: 'inside' | 'outside' = isInside ? 'inside' : 'outside';
-    console.log('🎯 Geofence Status:', currentGeoStatus, 'Previous:', lastStatusRef.current);
 
     // BETRETEN: outside → inside
     if (currentGeoStatus === 'inside' && lastStatusRef.current === 'outside') {
@@ -98,8 +95,6 @@ export const useGeofencing = ({
         handleAutoClockIn();
       } else if (currentStatus === 'idle' && !autoClockIn) {
         console.log('ℹ️ Status idle, aber Auto Clock-In ist deaktiviert');
-      } else {
-        console.log('ℹ️ Status ist bereits:', currentStatus);
       }
     } 
     // VERLASSEN: inside → outside
@@ -115,8 +110,6 @@ export const useGeofencing = ({
         handleAutoClockOut();
       } else if ((currentStatus === 'working' || currentStatus === 'break') && !autoClockOut) {
         console.log('ℹ️ Status working/break, aber Auto Clock-Out ist deaktiviert');
-      } else {
-        console.log('ℹ️ Status ist bereits idle');
       }
     }
   }, [position, enabled, locations, radiusMeters, currentStatus, autoClockIn, autoClockOut]);

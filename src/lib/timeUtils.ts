@@ -37,16 +37,43 @@ export const calculateNetWorkDuration = (
 ): { netMinutes: number; totalBreakMs: number } => {
   const start = new Date(startTime).getTime();
   const end = new Date(endTime).getTime();
-  let totalBreakMs = 0;
-
+  
+  // Berechne tatsächliche Pausenzeit
+  let actualBreakMs = 0;
   for (const br of breaks) {
     if (br.start && br.end) {
-      totalBreakMs += new Date(br.end).getTime() - new Date(br.start).getTime();
+      actualBreakMs += new Date(br.end).getTime() - new Date(br.start).getTime();
     }
   }
 
-  const netMs = end - start - totalBreakMs;
-  return { netMinutes: Math.round(netMs / (1000 * 60)), totalBreakMs };
+  // Berechne Bruttoarbeitszeit in Stunden
+  const grossWorkMs = end - start;
+  const grossWorkHours = grossWorkMs / (1000 * 60 * 60);
+  
+  // Ermittle gesetzlich vorgeschriebene Pausenzeit
+  let requiredBreakMinutes = 0;
+  if (grossWorkHours > 9) {
+    requiredBreakMinutes = 45; // Bei mehr als 9 Stunden: 45 Min Pause
+  } else if (grossWorkHours > 6) {
+    requiredBreakMinutes = 30; // Bei mehr als 6 Stunden: 30 Min Pause
+  }
+
+  const requiredBreakMs = requiredBreakMinutes * 60 * 1000;
+  const actualBreakMinutes = actualBreakMs / (1000 * 60);
+  
+  // Verwende die höhere Pausenzeit (tatsächlich oder vorgeschrieben)
+  const totalBreakMs = Math.max(actualBreakMs, requiredBreakMs);
+  
+  // Logge nur wenn automatisch Pausen hinzugefügt wurden
+  if (totalBreakMs > actualBreakMs) {
+    console.log(`⏱️ Automatische Pausenkorrektur: ${actualBreakMinutes.toFixed(0)}min → ${requiredBreakMinutes}min (${grossWorkHours.toFixed(1)}h Arbeitszeit)`);
+  }
+
+  const netMs = grossWorkMs - totalBreakMs;
+  return { 
+    netMinutes: Math.max(0, Math.round(netMs / (1000 * 60))), 
+    totalBreakMs 
+  };
 };
 
 export const calculateSurcharge = (
