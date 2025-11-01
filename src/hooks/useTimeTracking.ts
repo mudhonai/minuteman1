@@ -9,6 +9,7 @@ export const useTimeTracking = (userId: string | undefined) => {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<WorkStatus>('idle');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Load initial data
   useEffect(() => {
@@ -87,7 +88,7 @@ export const useTimeTracking = (userId: string | undefined) => {
     };
 
     loadData();
-  }, [userId]);
+  }, [userId, refreshTrigger]);
 
   // Real-time subscriptions
   useEffect(() => {
@@ -154,6 +155,8 @@ export const useTimeTracking = (userId: string | undefined) => {
     };
   }, [userId]);
 
+  const forceRefresh = () => setRefreshTrigger(prev => prev + 1);
+
   return {
     currentEntry,
     timeEntries,
@@ -161,5 +164,6 @@ export const useTimeTracking = (userId: string | undefined) => {
     loading,
     status,
     setSettings,
+    forceRefresh,
   };
 };

@@ -16,13 +16,14 @@ interface DashboardProps {
   status: 'idle' | 'working' | 'break';
   userId: string;
   customHolidays: string[];
+  onStateChange?: () => void;
 }
 
-export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId, customHolidays }: DashboardProps) => {
+export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId, customHolidays, onStateChange }: DashboardProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [pdfPeriod, setPdfPeriod] = useState<'week' | 'month' | 'year'>('month');
-  const { startWork, startBreak, endBreak, endWork } = useWorkActions(userId, customHolidays);
+  const { startWork, startBreak, endBreak, endWork } = useWorkActions(userId, customHolidays, onStateChange);
 
   const goToPreviousDay = () => {
     const newDate = new Date(selectedDate);

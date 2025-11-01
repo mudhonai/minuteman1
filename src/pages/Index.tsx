@@ -54,7 +54,7 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const { currentEntry, timeEntries, settings, loading, status } = useTimeTracking(user?.id);
+  const { currentEntry, timeEntries, settings, loading, status, forceRefresh } = useTimeTracking(user?.id);
   const { absences, loading: absencesLoading } = useAbsences(user?.id);
 
   // Geofencing Hook
@@ -207,6 +207,7 @@ const Index = () => {
               status={status}
               userId={user.id}
               customHolidays={settings?.custom_holidays || []}
+              onStateChange={forceRefresh}
             />
           )}
           {currentPage === 'history' && (

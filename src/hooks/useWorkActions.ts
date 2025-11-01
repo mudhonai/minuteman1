@@ -3,7 +3,11 @@ import { CurrentEntry, Break } from '@/lib/types';
 import { calculateNetWorkDuration, calculateSurcharge } from '@/lib/timeUtils';
 import { toast } from 'sonner';
 
-export const useWorkActions = (userId: string | undefined, customHolidays: string[]) => {
+export const useWorkActions = (
+  userId: string | undefined, 
+  customHolidays: string[],
+  onStateChange?: () => void
+) => {
   const startWork = async () => {
     if (!userId) return;
 
@@ -19,6 +23,7 @@ export const useWorkActions = (userId: string | undefined, customHolidays: strin
 
       if (error) throw error;
       toast.success('Arbeit gestartet!');
+      onStateChange?.();
     } catch (error: any) {
       toast.error(error.message || 'Fehler beim Starten der Arbeit');
     }
@@ -43,6 +48,7 @@ export const useWorkActions = (userId: string | undefined, customHolidays: strin
 
       if (error) throw error;
       toast.success('Pause gestartet!');
+      onStateChange?.();
     } catch (error: any) {
       toast.error(error.message || 'Fehler beim Starten der Pause');
     }
@@ -75,6 +81,7 @@ export const useWorkActions = (userId: string | undefined, customHolidays: strin
 
       if (error) throw error;
       toast.success('Pause beendet!');
+      onStateChange?.();
     } catch (error: any) {
       toast.error(error.message || 'Fehler beim Beenden der Pause');
     }
@@ -167,6 +174,7 @@ export const useWorkActions = (userId: string | undefined, customHolidays: strin
       if (deleteError) throw deleteError;
 
       toast.success('Arbeitstag erfolgreich abgeschlossen!');
+      onStateChange?.();
     } catch (error: any) {
       console.error('Error ending work:', error);
       toast.error(error.message || 'Fehler beim Beenden der Arbeit');
