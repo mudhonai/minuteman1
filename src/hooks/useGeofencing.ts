@@ -16,6 +16,8 @@ interface UseGeofencingProps {
   locations: GeofenceLocation[];
   radiusMeters: number;
   currentStatus: 'idle' | 'working' | 'break';
+  autoClockIn: boolean;
+  autoClockOut: boolean;
 }
 
 export const useGeofencing = ({
@@ -24,15 +26,42 @@ export const useGeofencing = ({
   locations,
   radiusMeters,
   currentStatus,
+  autoClockIn,
+  autoClockOut,
 }: UseGeofencingProps) => {
   const { position, error } = useGeolocation(enabled);
   const lastStatusRef = useRef<'inside' | 'outside'>('outside');
   const processingRef = useRef(false);
+  const lastActionTimeRef = useRef<number>(0);
 
   useEffect(() => {
-    if (!enabled || !position || !locations.length || processingRef.current) return;
+    if (!enabled || !position || !locations.length) {
+      console.log('🔍 Geofencing disabled or not ready:', { enabled, hasPosition: !!position, locationCount: locations.length });
+      return;
+    }
 
-    console.log('🔍 Geofencing Check:', { enabled, hasPosition: !!position, locationCount: locations.length, currentStatus });
+    // Verhindere zu häufige Aktionen (mindestens 30 Sekunden zwischen Aktionen)
+    const now = Date.now();
+    const timeSinceLastAction = now - lastActionTimeRef.current;
+    if (processingRef.current && timeSinceLastAction < 30000) {
+      console.log('⏳ Geofencing action still processing or too soon');
+      return;
+    }
+    
+    // Reset processing flag nach 30 Sekunden
+    if (timeSinceLastAction >= 30000) {
+      processingRef.current = false;
+    }
+
+    console.log('🔍 Geofencing Check:', { 
+      enabled, 
+      hasPosition: !!position, 
+      locationCount: locations.length, 
+      currentStatus,
+      autoClockIn,
+      autoClockOut,
+      position: `${position.latitude.toFixed(6)}, ${position.longitude.toFixed(6)}`
+    });
 
     // Prüfe ob wir in einer Geofence sind
     const isInside = locations.some(loc => {
@@ -43,33 +72,54 @@ export const useGeofencing = ({
         loc.longitude,
         radiusMeters
       );
-      console.log(`📍 Location ${loc.name}: ${inside ? 'INSIDE' : 'OUTSIDE'} (radius: ${radiusMeters}m)`);
+      const distance = Math.round(
+        Math.sqrt(
+          Math.pow((position.latitude - loc.latitude) * 111320, 2) +
+          Math.pow((position.longitude - loc.longitude) * 111320 * Math.cos(position.latitude * Math.PI / 180), 2)
+        )
+      );
+      console.log(`📍 Location "${loc.name}": ${inside ? 'INSIDE' : 'OUTSIDE'} (distance: ${distance}m, radius: ${radiusMeters}m)`);
       return inside;
     });
 
     const currentGeoStatus: 'inside' | 'outside' = isInside ? 'inside' : 'outside';
     console.log('🎯 Geofence Status:', currentGeoStatus, 'Previous:', lastStatusRef.current);
 
-    // NEUE LOGIK: Nur beim BETRETEN (outside → inside) reagieren und Status togglen
+    // BETRETEN: outside → inside
     if (currentGeoStatus === 'inside' && lastStatusRef.current === 'outside') {
-      console.log('🚪 Standort BETRETEN - Toggle Status');
+      console.log('🚪 Standort BETRETEN');
       lastStatusRef.current = currentGeoStatus;
-      processingRef.current = true;
-
-      if (currentStatus === 'idle') {
-        console.log('✅ Status idle → Triggering auto clock-in');
+      
+      // Nur einstempeln wenn idle UND autoClockIn aktiviert
+      if (currentStatus === 'idle' && autoClockIn) {
+        console.log('✅ Auto Clock-In aktiviert → Triggering');
+        processingRef.current = true;
+        lastActionTimeRef.current = now;
         handleAutoClockIn();
+      } else if (currentStatus === 'idle' && !autoClockIn) {
+        console.log('ℹ️ Status idle, aber Auto Clock-In ist deaktiviert');
       } else {
-        console.log('✅ Status working/break → Triggering auto clock-out');
-        handleAutoClockOut();
+        console.log('ℹ️ Status ist bereits:', currentStatus);
       }
     } 
-    // Status-Update auch beim Verlassen, aber keine Aktion
+    // VERLASSEN: inside → outside
     else if (currentGeoStatus === 'outside' && lastStatusRef.current === 'inside') {
-      console.log('🚶 Standort VERLASSEN - keine Aktion, bleibe im aktuellen Status');
+      console.log('🚶 Standort VERLASSEN');
       lastStatusRef.current = currentGeoStatus;
+      
+      // Nur ausstempeln wenn working/break UND autoClockOut aktiviert
+      if ((currentStatus === 'working' || currentStatus === 'break') && autoClockOut) {
+        console.log('✅ Auto Clock-Out aktiviert → Triggering');
+        processingRef.current = true;
+        lastActionTimeRef.current = now;
+        handleAutoClockOut();
+      } else if ((currentStatus === 'working' || currentStatus === 'break') && !autoClockOut) {
+        console.log('ℹ️ Status working/break, aber Auto Clock-Out ist deaktiviert');
+      } else {
+        console.log('ℹ️ Status ist bereits idle');
+      }
     }
-  }, [position, enabled, locations, radiusMeters, currentStatus]);
+  }, [position, enabled, locations, radiusMeters, currentStatus, autoClockIn, autoClockOut]);
 
   const handleAutoClockIn = async () => {
     try {
