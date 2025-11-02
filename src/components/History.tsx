@@ -9,6 +9,7 @@ import { formatMinutesToHHMM, formatGermanDateTime, formatDateForHistory, calcul
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Pencil, Trash2, Plus, X, TrendingUp, Calendar } from 'lucide-react';
+import { OvertimeSummary } from './OvertimeSummary';
 
 interface HistoryProps {
   timeEntries: TimeEntry[];
@@ -335,6 +336,8 @@ export const History = ({ timeEntries, customHolidays, absences }: HistoryProps)
   return (
     <>
       <div className="space-y-4">
+        <OvertimeSummary timeEntries={timeEntries} />
+        
         <Button onClick={openAddDialog} className="w-full gap-2 mb-4">
           <Plus className="h-4 w-4" />
           Neuen Tag hinzufügen
