@@ -93,8 +93,8 @@ export const History = ({ timeEntries, customHolidays, absences }: HistoryProps)
 
   const saveEntry = async () => {
     try {
-      console.log('saveEntry started, isAddingNew:', isAddingNew);
-      console.log('startTime:', startTime, 'endTime:', endTime, 'breaks:', breaks);
+      console.log('💾 saveEntry started, isAddingNew:', isAddingNew);
+      console.log('⏰ startTime:', startTime, 'endTime:', endTime, 'breaks:', breaks);
       
       // Konvertiere lokale Zeit zu ISO String
       const startISO = new Date(startTime).toISOString();
@@ -103,6 +103,7 @@ export const History = ({ timeEntries, customHolidays, absences }: HistoryProps)
       // Berechne Brutto-Arbeitszeit
       const grossWorkMs = new Date(endISO).getTime() - new Date(startISO).getTime();
       const grossWorkHours = grossWorkMs / (1000 * 60 * 60);
+      console.log('⏱️ Brutto-Arbeitszeit:', grossWorkHours.toFixed(2), 'Stunden');
 
       // Berechne tatsächliche Pausenzeit
       let actualBreakMs = 0;
@@ -112,6 +113,7 @@ export const History = ({ timeEntries, customHolidays, absences }: HistoryProps)
         }
       });
       const actualBreakMinutes = actualBreakMs / (1000 * 60);
+      console.log('⏸️ Tatsächliche Pausenzeit:', actualBreakMinutes.toFixed(0), 'Minuten');
 
       // Bestimme gesetzlich erforderliche Pausenzeit
       let requiredBreakMinutes = 0;
@@ -120,12 +122,14 @@ export const History = ({ timeEntries, customHolidays, absences }: HistoryProps)
       } else if (grossWorkHours > 6) {
         requiredBreakMinutes = 30;
       }
+      console.log('📋 Erforderliche Pausenzeit:', requiredBreakMinutes, 'Minuten');
 
       // Wenn tatsächliche Pause weniger ist, füge Differenz hinzu
       let finalBreakMs = actualBreakMs;
       if (actualBreakMinutes < requiredBreakMinutes) {
         const missingBreakMinutes = requiredBreakMinutes - actualBreakMinutes;
         finalBreakMs += missingBreakMinutes * 60 * 1000;
+        console.log('➕ Fehlende Pausenzeit ergänzt:', missingBreakMinutes.toFixed(0), 'Minuten');
         
         toast.info(
           `Gesetzliche Mindestpause von ${requiredBreakMinutes} Minuten wurde automatisch verrechnet (${missingBreakMinutes.toFixed(0)} Min. ergänzt).`,
@@ -136,6 +140,7 @@ export const History = ({ timeEntries, customHolidays, absences }: HistoryProps)
       // Berechne Netto-Arbeitszeit mit erzwungener Pause
       const netMinutes = Math.max(0, Math.round((grossWorkMs - finalBreakMs) / (1000 * 60)));
       const totalBreakMs = finalBreakMs;
+      console.log('✅ Finale Werte - Netto:', netMinutes, 'Min, Pause:', Math.round(totalBreakMs / (1000 * 60)), 'Min');
 
       const surcharge = calculateSurcharge(startISO, netMinutes, customHolidays);
 
