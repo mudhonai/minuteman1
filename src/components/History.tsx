@@ -100,7 +100,43 @@ export const History = ({ timeEntries, customHolidays, absences }: HistoryProps)
       const startISO = new Date(startTime).toISOString();
       const endISO = new Date(endTime).toISOString();
 
-      const { netMinutes, totalBreakMs } = calculateNetWorkDuration(startISO, endISO, breaks);
+      // Berechne Brutto-Arbeitszeit
+      const grossWorkMs = new Date(endISO).getTime() - new Date(startISO).getTime();
+      const grossWorkHours = grossWorkMs / (1000 * 60 * 60);
+
+      // Berechne tatsächliche Pausenzeit
+      let actualBreakMs = 0;
+      breaks.forEach(b => {
+        if (b.end) {
+          actualBreakMs += new Date(b.end).getTime() - new Date(b.start).getTime();
+        }
+      });
+      const actualBreakMinutes = actualBreakMs / (1000 * 60);
+
+      // Bestimme gesetzlich erforderliche Pausenzeit
+      let requiredBreakMinutes = 0;
+      if (grossWorkHours > 9) {
+        requiredBreakMinutes = 45;
+      } else if (grossWorkHours > 6) {
+        requiredBreakMinutes = 30;
+      }
+
+      // Wenn tatsächliche Pause weniger ist, füge Differenz hinzu
+      let finalBreakMs = actualBreakMs;
+      if (actualBreakMinutes < requiredBreakMinutes) {
+        const missingBreakMinutes = requiredBreakMinutes - actualBreakMinutes;
+        finalBreakMs += missingBreakMinutes * 60 * 1000;
+        
+        toast.info(
+          `Gesetzliche Mindestpause von ${requiredBreakMinutes} Minuten wurde automatisch verrechnet (${missingBreakMinutes.toFixed(0)} Min. ergänzt).`,
+          { duration: 6000 }
+        );
+      }
+
+      // Berechne Netto-Arbeitszeit mit erzwungener Pause
+      const netMinutes = Math.max(0, Math.round((grossWorkMs - finalBreakMs) / (1000 * 60)));
+      const totalBreakMs = finalBreakMs;
+
       const surcharge = calculateSurcharge(startISO, netMinutes, customHolidays);
 
       const { data: { user } } = await supabase.auth.getUser();

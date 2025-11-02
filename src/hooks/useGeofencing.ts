@@ -36,6 +36,7 @@ export const useGeofencing = ({
 
   useEffect(() => {
     if (!enabled || !position || !locations.length) {
+      console.log('[Geofencing] Disabled or no data:', { enabled, hasPosition: !!position, locationCount: locations.length });
       return;
     }
 
@@ -62,6 +63,7 @@ export const useGeofencing = ({
     });
 
     // Prüfe ob wir in einer Geofence sind
+    let closestDistance = Infinity;
     const isInside = locations.some(loc => {
       const inside = isWithinGeofence(
         position.latitude,
@@ -76,9 +78,12 @@ export const useGeofencing = ({
           Math.pow((position.longitude - loc.longitude) * 111320 * Math.cos(position.latitude * Math.PI / 180), 2)
         )
       );
+      closestDistance = Math.min(closestDistance, distance);
       console.log(`📍 Location "${loc.name}": ${inside ? 'INSIDE' : 'OUTSIDE'} (distance: ${distance}m, radius: ${radiusMeters}m)`);
       return inside;
     });
+
+    console.log(`📏 Nächster Standort ist ${closestDistance}m entfernt (Radius: ${radiusMeters}m)`);
 
     const currentGeoStatus: 'inside' | 'outside' = isInside ? 'inside' : 'outside';
 

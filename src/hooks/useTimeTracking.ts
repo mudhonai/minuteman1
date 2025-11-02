@@ -104,18 +104,30 @@ export const useTimeTracking = (userId: string | undefined) => {
           table: 'current_entry',
           filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
+        async (payload) => {
           console.log('Current entry change:', payload.eventType, payload);
           if (payload.eventType === 'DELETE') {
             setCurrentEntry(null);
             setStatus('idle');
-          } else if (payload.new) {
-            const entry = {
-              ...payload.new,
-              breaks: (payload.new.breaks as any) as Break[]
-            } as CurrentEntry;
-            setCurrentEntry(entry);
-            setStatus(entry.status);
+          } else if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            // Lade immer neu von der DB um sicherzugehen dass wir aktuelle Daten haben
+            const { data } = await supabase
+              .from('current_entry')
+              .select('*')
+              .eq('user_id', userId)
+              .maybeSingle();
+            
+            if (data) {
+              const entry = {
+                ...data,
+                breaks: (data.breaks as any) as Break[]
+              } as CurrentEntry;
+              setCurrentEntry(entry);
+              setStatus(entry.status);
+            } else {
+              setCurrentEntry(null);
+              setStatus('idle');
+            }
           }
         }
       )
