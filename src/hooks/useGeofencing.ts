@@ -30,7 +30,7 @@ export const useGeofencing = ({
   autoClockOut,
 }: UseGeofencingProps) => {
   const { position, error } = useGeolocation(enabled);
-  const lastStatusRef = useRef<'inside' | 'outside'>('outside');
+  const lastTriggerStatusRef = useRef<'in-range' | 'out-of-range'>('out-of-range');
   const processingRef = useRef(false);
   const lastActionTimeRef = useRef<number>(0);
 
@@ -57,15 +57,13 @@ export const useGeofencing = ({
       hasPosition: !!position, 
       locationCount: locations.length, 
       currentStatus,
-      autoClockIn,
-      autoClockOut,
       position: `${position.latitude.toFixed(6)}, ${position.longitude.toFixed(6)}`
     });
 
-    // Prüfe ob wir in einer Geofence sind
+    // Prüfe ob wir AKTUELL in Reichweite eines Trigger-Punkts sind
     let closestDistance = Infinity;
-    const isInside = locations.some(loc => {
-      const inside = isWithinGeofence(
+    const isInRange = locations.some(loc => {
+      const inRange = isWithinGeofence(
         position.latitude,
         position.longitude,
         loc.latitude,
@@ -79,43 +77,38 @@ export const useGeofencing = ({
         )
       );
       closestDistance = Math.min(closestDistance, distance);
-      console.log(`📍 Location "${loc.name}": ${inside ? 'INSIDE' : 'OUTSIDE'} (distance: ${distance}m, radius: ${radiusMeters}m)`);
-      return inside;
+      console.log(`📍 Trigger-Punkt "${loc.name}": ${inRange ? 'IN REICHWEITE' : 'AUSSER REICHWEITE'} (distance: ${distance}m, radius: ${radiusMeters}m)`);
+      return inRange;
     });
 
-    console.log(`📏 Nächster Standort ist ${closestDistance}m entfernt (Radius: ${radiusMeters}m)`);
+    console.log(`📏 Nächster Trigger-Punkt ist ${closestDistance}m entfernt (Radius: ${radiusMeters}m)`);
 
-    const currentGeoStatus: 'inside' | 'outside' = isInside ? 'inside' : 'outside';
+    const currentTriggerStatus: 'in-range' | 'out-of-range' = isInRange ? 'in-range' : 'out-of-range';
 
-    // BETRETEN: outside → inside
-    if (currentGeoStatus === 'inside' && lastStatusRef.current === 'outside') {
-      console.log('🚪 Standort BETRETEN');
-      lastStatusRef.current = currentGeoStatus;
+    // DURCHQUERUNG ERKANNT: out-of-range → in-range
+    if (currentTriggerStatus === 'in-range' && lastTriggerStatusRef.current === 'out-of-range') {
+      console.log('🎯 TRIGGER-PUNKT DURCHQUERT!');
+      lastTriggerStatusRef.current = currentTriggerStatus;
       
-      // Nur einstempeln wenn idle UND autoClockIn aktiviert
+      processingRef.current = true;
+      lastActionTimeRef.current = now;
+      
+      // Toggle-Logik: Je nach Status ein- oder ausstempeln
       if (currentStatus === 'idle' && autoClockIn) {
-        console.log('✅ Auto Clock-In aktiviert → Triggering');
-        processingRef.current = true;
-        lastActionTimeRef.current = now;
+        console.log('✅ Status idle → Auto-Einstempeln');
         handleAutoClockIn();
-      } else if (currentStatus === 'idle' && !autoClockIn) {
-        console.log('ℹ️ Status idle, aber Auto Clock-In ist deaktiviert');
+      } else if ((currentStatus === 'working' || currentStatus === 'break') && autoClockOut) {
+        console.log('✅ Status working/break → Auto-Ausstempeln');
+        handleAutoClockOut();
+      } else {
+        console.log('ℹ️ Trigger durchquert, aber entsprechende Auto-Funktion ist deaktiviert');
+        processingRef.current = false;
       }
     } 
-    // VERLASSEN: inside → outside
-    else if (currentGeoStatus === 'outside' && lastStatusRef.current === 'inside') {
-      console.log('🚶 Standort VERLASSEN');
-      lastStatusRef.current = currentGeoStatus;
-      
-      // Nur ausstempeln wenn working/break UND autoClockOut aktiviert
-      if ((currentStatus === 'working' || currentStatus === 'break') && autoClockOut) {
-        console.log('✅ Auto Clock-Out aktiviert → Triggering');
-        processingRef.current = true;
-        lastActionTimeRef.current = now;
-        handleAutoClockOut();
-      } else if ((currentStatus === 'working' || currentStatus === 'break') && !autoClockOut) {
-        console.log('ℹ️ Status working/break, aber Auto Clock-Out ist deaktiviert');
-      }
+    // VERLASSEN des Trigger-Bereichs: in-range → out-of-range
+    else if (currentTriggerStatus === 'out-of-range' && lastTriggerStatusRef.current === 'in-range') {
+      console.log('🚶 Trigger-Bereich verlassen (bereit für nächste Durchquerung)');
+      lastTriggerStatusRef.current = currentTriggerStatus;
     }
   }, [position, enabled, locations, radiusMeters, currentStatus, autoClockIn, autoClockOut]);
 

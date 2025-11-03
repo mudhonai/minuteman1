@@ -129,9 +129,9 @@ export const GeofencingSettings = ({ userId }: GeofencingSettingsProps) => {
               <MapPin className="h-6 w-6 text-primary" />
             </div>
             <div className="flex-1">
-              <h3 className="font-bold text-lg mb-2">Automatische Standorterkennung</h3>
+              <h3 className="font-bold text-lg mb-2">Automatische Durchgangs-Erkennung</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Aktiviere Geofencing, um automatisch ein- und auszustempeln, wenn du dein Büro betrittst oder verlässt.
+                Aktiviere Geofencing, um beim Durchqueren eines definierten Punktes automatisch ein- und auszustempeln (Toggle-Funktion).
               </p>
               {permission === 'denied' ? (
                 <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-4">
@@ -196,7 +196,7 @@ export const GeofencingSettings = ({ userId }: GeofencingSettingsProps) => {
 
           <Card className="p-6 space-y-4">
             <div>
-              <Label htmlFor="radius">Radius in Metern</Label>
+              <Label htmlFor="radius">Trigger-Radius in Metern</Label>
               <Input
                 id="radius"
                 type="number"
@@ -207,7 +207,7 @@ export const GeofencingSettings = ({ userId }: GeofencingSettingsProps) => {
                 max="1000"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Du wirst erkannt, wenn du dich innerhalb von {radius}m eines Standorts befindest
+                Du löst den Trigger aus, wenn du dich innerhalb von {radius}m eines Trigger-Punkts befindest
               </p>
             </div>
 
@@ -215,7 +215,7 @@ export const GeofencingSettings = ({ userId }: GeofencingSettingsProps) => {
               <div>
                 <Label>Automatisch einstempeln</Label>
                 <p className="text-xs text-muted-foreground">
-                  Beim Betreten eines Standorts
+                  Beim Durchqueren (wenn Status = idle)
                 </p>
               </div>
               <Switch
@@ -228,7 +228,7 @@ export const GeofencingSettings = ({ userId }: GeofencingSettingsProps) => {
               <div>
                 <Label>Automatisch ausstempeln</Label>
                 <p className="text-xs text-muted-foreground">
-                  Beim Verlassen eines Standorts
+                  Beim Durchqueren (wenn Status = working/break)
                 </p>
               </div>
               <Switch
@@ -240,7 +240,7 @@ export const GeofencingSettings = ({ userId }: GeofencingSettingsProps) => {
 
           <Card className="p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold">Standorte</h3>
+              <h3 className="font-bold">Trigger-Punkte</h3>
               <Button
                 variant="outline"
                 size="sm"
@@ -254,12 +254,12 @@ export const GeofencingSettings = ({ userId }: GeofencingSettingsProps) => {
 
             {isAddingLocation && (
               <div className="space-y-2 p-4 bg-muted/50 rounded-lg">
-                <Label htmlFor="location-name">Name des Standorts</Label>
+                <Label htmlFor="location-name">Name des Trigger-Punkts</Label>
                 <Input
                   id="location-name"
                   value={newLocationName}
                   onChange={(e) => setNewLocationName(e.target.value)}
-                  placeholder="z.B. Büro, Homeoffice"
+                  placeholder="z.B. Einfahrt Werksgelände, Haupttor"
                 />
                 <div className="flex gap-2">
                   <Button onClick={addCurrentLocation} size="sm" className="flex-1">
@@ -281,7 +281,7 @@ export const GeofencingSettings = ({ userId }: GeofencingSettingsProps) => {
 
             {locations.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Noch keine Standorte gespeichert
+                Noch keine Trigger-Punkte gespeichert
               </p>
             ) : (
               <div className="space-y-2">
