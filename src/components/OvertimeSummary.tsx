@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TimeEntry, TARGET_HOURS_DAILY } from '@/lib/types';
 import { formatMinutesToHHMM } from '@/lib/timeUtils';
 import { TrendingUp, Calendar, CalendarDays } from 'lucide-react';
-import { startOfWeek, startOfMonth, startOfYear, format } from 'date-fns';
+import { startOfWeek, startOfMonth, startOfYear, endOfWeek, format } from 'date-fns';
 import { de } from 'date-fns/locale';
 
 interface OvertimeSummaryProps {
@@ -29,15 +29,17 @@ export const OvertimeSummary = ({ timeEntries }: OvertimeSummaryProps) => {
   const weeklyOvertime = timeEntries.reduce((acc, entry) => {
     const date = new Date(entry.start_time);
     const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(date, { weekStartsOn: 1 });
     const weekKey = format(weekStart, 'yyyy-ww', { locale: de });
     const weekLabel = format(weekStart, "'KW' ww, yyyy", { locale: de });
+    const dateRange = `${format(weekStart, 'dd.MM.')} - ${format(weekEnd, 'dd.MM.yyyy')}`;
     
     if (!acc[weekKey]) {
-      acc[weekKey] = { label: weekLabel, minutes: 0, date: weekStart };
+      acc[weekKey] = { label: weekLabel, dateRange, minutes: 0, date: weekStart };
     }
     acc[weekKey].minutes += calculateOvertime(entry);
     return acc;
-  }, {} as Record<string, { label: string; minutes: number; date: Date }>);
+  }, {} as Record<string, { label: string; dateRange: string; minutes: number; date: Date }>);
 
   // Gruppiere nach Monat
   const monthlyOvertime = timeEntries.reduce((acc, entry) => {
@@ -91,9 +93,12 @@ export const OvertimeSummary = ({ timeEntries }: OvertimeSummaryProps) => {
           ) : (
             sortedWeeks.map((week) => (
               <div key={week.label} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{week.label}</span>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{week.label}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground ml-6">{week.dateRange}</span>
                 </div>
                 <span className={`font-bold ${week.minutes >= 0 ? 'text-primary' : 'text-destructive'}`}>
                   {week.minutes >= 0 ? '+' : ''}{formatMinutesToHHMM(week.minutes)}

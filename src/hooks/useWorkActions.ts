@@ -174,7 +174,11 @@ export const useWorkActions = (
       if (deleteError) throw deleteError;
 
       toast.success('Arbeitstag erfolgreich abgeschlossen!');
-      onStateChange?.();
+      
+      // Force refresh nach kurzer Verzögerung, um sicherzustellen dass alle DB-Updates verarbeitet wurden
+      setTimeout(() => {
+        onStateChange?.();
+      }, 500);
     } catch (error: any) {
       console.error('Error ending work:', error);
       toast.error(error.message || 'Fehler beim Beenden der Arbeit');
