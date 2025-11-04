@@ -68,6 +68,8 @@ export interface UserSettings {
     longitude: number;
   }>;
   geofence_radius_meters?: number;
+  geofence_min_accuracy?: number;
+  geofence_test_mode?: boolean;
   auto_clock_in_enabled?: boolean;
   auto_clock_out_enabled?: boolean;
   created_at?: string;

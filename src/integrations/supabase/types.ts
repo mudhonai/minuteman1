@@ -74,6 +74,60 @@ export type Database = {
         }
         Relationships: []
       }
+      geofencing_logs: {
+        Row: {
+          action: string
+          created_at: string
+          distance_to_trigger: number | null
+          error_message: string | null
+          gps_accuracy: number
+          id: string
+          latitude: number
+          location_name: string
+          longitude: number
+          status_after: string | null
+          status_before: string | null
+          success: boolean
+          timestamp: string
+          trigger_type: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          distance_to_trigger?: number | null
+          error_message?: string | null
+          gps_accuracy: number
+          id?: string
+          latitude: number
+          location_name: string
+          longitude: number
+          status_after?: string | null
+          status_before?: string | null
+          success?: boolean
+          timestamp?: string
+          trigger_type: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          distance_to_trigger?: number | null
+          error_message?: string | null
+          gps_accuracy?: number
+          id?: string
+          latitude?: number
+          location_name?: string
+          longitude?: number
+          status_after?: string | null
+          status_before?: string | null
+          success?: boolean
+          timestamp?: string
+          trigger_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       overtime_allowance: {
         Row: {
           consumed_hours: number

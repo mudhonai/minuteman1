@@ -28,6 +28,8 @@ export const GeofencingSettings = ({ userId }: GeofencingSettingsProps) => {
   const [locations, setLocations] = useState<GeofenceLocation[]>([]);
   const [newLocationName, setNewLocationName] = useState('');
   const [isAddingLocation, setIsAddingLocation] = useState(false);
+  const [testMode, setTestMode] = useState(false);
+  const [minAccuracy, setMinAccuracy] = useState('50');
 
   const { position, error, permission, requestPermission } = useGeolocation(geofencingEnabled);
 
@@ -39,7 +41,7 @@ export const GeofencingSettings = ({ userId }: GeofencingSettingsProps) => {
     try {
       const { data, error } = await supabase
         .from('user_settings')
-        .select('geofencing_enabled, geofence_locations, geofence_radius_meters, auto_clock_in_enabled, auto_clock_out_enabled')
+        .select('*')
         .eq('user_id', userId)
         .single();
 
@@ -50,6 +52,8 @@ export const GeofencingSettings = ({ userId }: GeofencingSettingsProps) => {
         setAutoClockIn(data.auto_clock_in_enabled || false);
         setAutoClockOut(data.auto_clock_out_enabled || false);
         setRadius(String(data.geofence_radius_meters || 100));
+        setMinAccuracy(String(data.geofence_min_accuracy || 50));
+        setTestMode(data.geofence_test_mode || false);
         const parsedLocations = Array.isArray(data.geofence_locations) 
           ? data.geofence_locations as unknown as GeofenceLocation[]
           : [];
@@ -68,6 +72,8 @@ export const GeofencingSettings = ({ userId }: GeofencingSettingsProps) => {
           geofencing_enabled: geofencingEnabled,
           geofence_locations: locations as any,
           geofence_radius_meters: parseInt(radius),
+          geofence_min_accuracy: parseInt(minAccuracy),
+          geofence_test_mode: testMode,
           auto_clock_in_enabled: autoClockIn,
           auto_clock_out_enabled: autoClockOut,
         })
@@ -236,6 +242,50 @@ export const GeofencingSettings = ({ userId }: GeofencingSettingsProps) => {
                 onCheckedChange={setAutoClockOut}
               />
             </div>
+          </Card>
+
+          <Card className="p-6 space-y-4">
+            <h3 className="font-bold">Erweiterte Einstellungen</h3>
+            
+            <div>
+              <Label htmlFor="min-accuracy">Min. GPS-Genauigkeit (Meter)</Label>
+              <Input
+                id="min-accuracy"
+                type="number"
+                value={minAccuracy}
+                onChange={(e) => setMinAccuracy(e.target.value)}
+                placeholder="50"
+                min="10"
+                max="100"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Trigger werden nur ausgelöst, wenn GPS-Genauigkeit besser als {minAccuracy}m ist
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Test-Modus</Label>
+                <p className="text-xs text-muted-foreground">
+                  Geofencing testen ohne echtes Stempeln
+                </p>
+              </div>
+              <Switch
+                checked={testMode}
+                onCheckedChange={setTestMode}
+              />
+            </div>
+
+            {testMode && (
+              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+                <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400">
+                  ⚠️ Test-Modus aktiv
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Trigger-Aktionen werden nur simuliert und nicht ausgeführt
+                </p>
+              </div>
+            )}
           </Card>
 
           <Card className="p-6 space-y-4">

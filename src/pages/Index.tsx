@@ -8,6 +8,7 @@ import { Absences } from '@/components/Absences';
 import { CalendarView } from '@/components/CalendarView';
 import { Statistics } from '@/components/Statistics';
 import { OvertimeAllowance } from '@/components/OvertimeAllowance';
+import { GeofencingHistory } from '@/components/GeofencingHistory';
 import { PWAUpdatePrompt } from '@/components/PWAUpdatePrompt';
 import { useTimeTracking } from '@/hooks/useTimeTracking';
 import { useAbsences } from '@/hooks/useAbsences';
@@ -18,9 +19,9 @@ import marbleBackground from '@/assets/marble-background.jpg';
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'history' | 'absences' | 'calendar' | 'statistics' | 'usp' | 'settings'>('dashboard');
+  const [currentPage, setCurrentPage] = useState<'dashboard' | 'history' | 'absences' | 'calendar' | 'statistics' | 'usp' | 'geofencing' | 'settings'>('dashboard');
   
-  const pages = ['dashboard', 'history', 'absences', 'calendar', 'statistics', 'usp', 'settings'] as const;
+  const pages = ['dashboard', 'history', 'absences', 'calendar', 'statistics', 'usp', 'geofencing', 'settings'] as const;
   
   const navigateLeft = () => {
     const currentIndex = pages.indexOf(currentPage);
@@ -57,7 +58,7 @@ const Index = () => {
   const { currentEntry, timeEntries, settings, loading, status, forceRefresh } = useTimeTracking(user?.id);
   const { absences, loading: absencesLoading } = useAbsences(user?.id);
 
-  // Geofencing Hook
+  // Geofencing Hook mit erweiterten Optionen
   useGeofencing({
     userId: user?.id || '',
     enabled: settings?.geofencing_enabled || false,
@@ -66,6 +67,8 @@ const Index = () => {
     currentStatus: status,
     autoClockIn: settings?.auto_clock_in_enabled || false,
     autoClockOut: settings?.auto_clock_out_enabled || false,
+    testMode: settings?.geofence_test_mode || false,
+    minAccuracyMeters: settings?.geofence_min_accuracy || 50,
   });
 
   if (!user) {
@@ -186,6 +189,16 @@ const Index = () => {
               ÜSP
             </button>
             <button
+              onClick={() => setCurrentPage('geofencing')}
+              className={`px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
+                currentPage === 'geofencing'
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'bg-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Geofencing
+            </button>
+            <button
               onClick={() => setCurrentPage('settings')}
               className={`px-3 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
                 currentPage === 'settings'
@@ -234,6 +247,9 @@ const Index = () => {
           )}
           {currentPage === 'usp' && (
             <OvertimeAllowance userId={user.id} />
+          )}
+          {currentPage === 'geofencing' && (
+            <GeofencingHistory userId={user.id} />
           )}
           {currentPage === 'settings' && settings && (
             <Settings settings={settings} userId={user.id} />
