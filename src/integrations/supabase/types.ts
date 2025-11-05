@@ -226,7 +226,9 @@ export type Database = {
           created_at: string
           custom_holidays: Json | null
           geofence_locations: Json | null
+          geofence_min_accuracy: number | null
           geofence_radius_meters: number | null
+          geofence_test_mode: boolean | null
           geofencing_enabled: boolean | null
           id: string
           notification_preferences: Json | null
@@ -240,7 +242,9 @@ export type Database = {
           created_at?: string
           custom_holidays?: Json | null
           geofence_locations?: Json | null
+          geofence_min_accuracy?: number | null
           geofence_radius_meters?: number | null
+          geofence_test_mode?: boolean | null
           geofencing_enabled?: boolean | null
           id?: string
           notification_preferences?: Json | null
@@ -254,7 +258,9 @@ export type Database = {
           created_at?: string
           custom_holidays?: Json | null
           geofence_locations?: Json | null
+          geofence_min_accuracy?: number | null
           geofence_radius_meters?: number | null
+          geofence_test_mode?: boolean | null
           geofencing_enabled?: boolean | null
           id?: string
           notification_preferences?: Json | null
