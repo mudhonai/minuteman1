@@ -30,6 +30,28 @@ export const GeofencingHistory = ({ userId }: GeofencingHistoryProps) => {
 
   useEffect(() => {
     loadLogs();
+
+    // Realtime Subscription
+    const channel = supabase
+      .channel('geofencing_logs_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'geofencing_logs',
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          console.log('⚡ Geofencing logs changed - reloading');
+          loadLogs();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userId]);
 
   const loadLogs = async () => {

@@ -94,6 +94,7 @@ export const useTimeTracking = (userId: string | undefined) => {
   useEffect(() => {
     if (!userId) return;
 
+    // Current Entry Realtime
     const currentEntryChannel = supabase
       .channel('current_entry_changes')
       .on(
@@ -105,12 +106,12 @@ export const useTimeTracking = (userId: string | undefined) => {
           filter: `user_id=eq.${userId}`,
         },
         async (payload) => {
-          console.log('Current entry change:', payload.eventType, payload);
+          console.log('⚡ Current entry change:', payload.eventType);
           if (payload.eventType === 'DELETE') {
             setCurrentEntry(null);
             setStatus('idle');
           } else if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            // Lade immer neu von der DB um sicherzugehen dass wir aktuelle Daten haben
+            // Lade immer neu von der DB
             const { data } = await supabase
               .from('current_entry')
               .select('*')
@@ -133,6 +134,7 @@ export const useTimeTracking = (userId: string | undefined) => {
       )
       .subscribe();
 
+    // Time Entries Realtime
     const timeEntriesChannel = supabase
       .channel('time_entries_changes')
       .on(
@@ -144,7 +146,7 @@ export const useTimeTracking = (userId: string | undefined) => {
           filter: `user_id=eq.${userId}`,
         },
         async () => {
-          // Reload entries on change
+          console.log('⚡ Time entries changed - reloading');
           const { data } = await supabase
             .from('time_entries')
             .select('*')
@@ -161,9 +163,40 @@ export const useTimeTracking = (userId: string | undefined) => {
       )
       .subscribe();
 
+    // User Settings Realtime
+    const settingsChannel = supabase
+      .channel('user_settings_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_settings',
+          filter: `user_id=eq.${userId}`,
+        },
+        async () => {
+          console.log('⚡ Settings changed - reloading');
+          const { data } = await supabase
+            .from('user_settings')
+            .select('*')
+            .eq('user_id', userId)
+            .maybeSingle();
+          
+          if (data) {
+            setSettings({
+              ...data,
+              custom_holidays: Array.isArray(data.custom_holidays) ? data.custom_holidays as any : [],
+              geofence_locations: Array.isArray(data.geofence_locations) ? data.geofence_locations as any : [],
+            } as any as UserSettings);
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(currentEntryChannel);
       supabase.removeChannel(timeEntriesChannel);
+      supabase.removeChannel(settingsChannel);
     };
   }, [userId]);
 

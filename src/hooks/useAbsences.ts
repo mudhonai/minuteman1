@@ -43,6 +43,7 @@ export const useAbsences = (userId: string | undefined) => {
           filter: `user_id=eq.${userId}`,
         },
         () => {
+          console.log('⚡ Absences changed - reloading');
           fetchAbsences();
         }
       )
