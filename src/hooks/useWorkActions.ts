@@ -23,7 +23,11 @@ export const useWorkActions = (
 
       if (error) throw error;
       toast.success('Arbeit gestartet!');
-      onStateChange?.();
+      
+      // Sofortige Aktualisierung erzwingen
+      if (onStateChange) {
+        setTimeout(() => onStateChange(), 100);
+      }
     } catch (error: any) {
       toast.error(error.message || 'Fehler beim Starten der Arbeit');
     }
@@ -48,7 +52,11 @@ export const useWorkActions = (
 
       if (error) throw error;
       toast.success('Pause gestartet!');
-      onStateChange?.();
+      
+      // Sofortige Aktualisierung erzwingen
+      if (onStateChange) {
+        setTimeout(() => onStateChange(), 100);
+      }
     } catch (error: any) {
       toast.error(error.message || 'Fehler beim Starten der Pause');
     }
@@ -81,7 +89,11 @@ export const useWorkActions = (
 
       if (error) throw error;
       toast.success('Pause beendet!');
-      onStateChange?.();
+      
+      // Sofortige Aktualisierung erzwingen
+      if (onStateChange) {
+        setTimeout(() => onStateChange(), 100);
+      }
     } catch (error: any) {
       toast.error(error.message || 'Fehler beim Beenden der Pause');
     }
@@ -175,10 +187,12 @@ export const useWorkActions = (
 
       toast.success('Arbeitstag erfolgreich abgeschlossen!');
       
-      // Force refresh nach kurzer Verzögerung, um sicherzustellen dass alle DB-Updates verarbeitet wurden
-      setTimeout(() => {
-        onStateChange?.();
-      }, 500);
+      // Sofortige und verzögerte Aktualisierung für bessere Zuverlässigkeit
+      if (onStateChange) {
+        onStateChange(); // Sofort
+        setTimeout(() => onStateChange(), 100); // Nochmal nach 100ms
+        setTimeout(() => onStateChange(), 500); // Und nach 500ms zur Sicherheit
+      }
     } catch (error: any) {
       console.error('Error ending work:', error);
       toast.error(error.message || 'Fehler beim Beenden der Arbeit');
