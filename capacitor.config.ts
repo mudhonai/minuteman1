@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.7b116ff6ebf646559dc2fd36adf2a949',
-  appName: 'minuteman1',
+  appId: 'com.mudhonai.minuteman',
+  appName: 'Minuteman',
   webDir: 'dist',
   server: {
     url: 'https://7b116ff6-ebf6-4655-9dc2-fd36adf2a949.lovableproject.com?forceHideBadge=true',
