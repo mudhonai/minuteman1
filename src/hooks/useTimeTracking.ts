@@ -13,7 +13,10 @@ export const useTimeTracking = (userId: string | undefined) => {
 
   // Load initial data
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
 
     const loadData = async () => {
       try {
