@@ -32,7 +32,9 @@ const isHoliday = (date: Date, customHolidays: string[]): boolean => {
 const calculateSurcharge = (
   startTime: string,
   netMinutes: number,
-  customHolidays: string[]
+  customHolidays: string[],
+  uspSettled: boolean,
+  previousWeeksTargetMet: boolean
 ): {
   regularMinutes: number;
   surchargeMinutes: number;
@@ -58,14 +60,19 @@ const calculateSurcharge = (
     regularMinutes = 0; // Alles ist Überstunde
     isSurchargeDay = true; // ECHTER Sondertag
   } 
-  // Samstag: Ab der ersten Minute 30% Zuschlag
+  // Samstag: 60% wenn ÜSP abgegolten UND Vorwochen-Soll erfüllt, sonst 30%
   else if (dayOfWeek === 6) {
-    rate = SURCHARGE_RATES.SATURDAY;
-    label = 'Samstagszuschlag (30%)';
+    if (uspSettled && previousWeeksTargetMet) {
+      rate = SURCHARGE_RATES.SUNDAY; // 60%
+      label = 'Samstagszuschlag (60%)';
+    } else {
+      rate = SURCHARGE_RATES.SATURDAY; // 30%
+      label = 'Samstagszuschlag (30%)';
+    }
     surchargeMinutes = netMinutes;
     regularMinutes = 0; // Alles ist Überstunde
     isSurchargeDay = true; // ECHTER Sondertag
-  } 
+  }
   // Sonntag: Ab der ersten Minute 60% Zuschlag
   else if (dayOfWeek === 0) {
     rate = SURCHARGE_RATES.SUNDAY;
@@ -151,15 +158,64 @@ Deno.serve(async (req) => {
       userHolidays[s.user_id] = (s.custom_holidays as string[]) || [];
     });
 
+    console.log('Fetching ÜSP data...');
+    // Get current year ÜSP status for all users
+    const currentYear = new Date().getFullYear();
+    const { data: uspData, error: uspError } = await supabase
+      .from('overtime_allowance')
+      .select('user_id, is_fully_consumed, year')
+      .eq('year', currentYear);
+
+    if (uspError) {
+      console.error('Error fetching USP:', uspError);
+      throw uspError;
+    }
+
+    const userUspSettled: Record<string, boolean> = {};
+    uspData?.forEach(u => {
+      userUspSettled[u.user_id] = u.is_fully_consumed || false;
+    });
+
+    console.log('Calculating previous weeks target...');
+    // Calculate if previous weeks target was met for each user
+    const userPreviousWeeksTargetMet: Record<string, boolean> = {};
+    
+    // Group entries by user and calculate
+    for (const userId of [...new Set(entries.map(e => e.user_id))]) {
+      const userEntries = entries.filter(e => e.user_id === userId);
+      
+      // Calculate total worked vs target for all weeks before current
+      let totalWorked = 0;
+      let totalTarget = 0;
+      
+      for (const entry of userEntries) {
+        const entryDate = new Date(entry.start_time);
+        const dayOfWeek = entryDate.getDay();
+        
+        // Skip Saturdays and Sundays for target calculation
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          totalWorked += entry.net_work_duration_minutes;
+          totalTarget += TARGET_HOURS_DAILY[dayOfWeek] || 0;
+        }
+      }
+      
+      userPreviousWeeksTargetMet[userId] = totalWorked >= totalTarget;
+    }
+
     console.log('Recalculating entries...');
     // Recalculate each entry
     const updates = [];
     for (const entry of entries) {
       const customHolidays = userHolidays[entry.user_id] || [];
+      const uspSettled = userUspSettled[entry.user_id] || false;
+      const previousWeeksTargetMet = userPreviousWeeksTargetMet[entry.user_id] || false;
+      
       const surchargeData = calculateSurcharge(
         entry.start_time,
         entry.net_work_duration_minutes,
-        customHolidays
+        customHolidays,
+        uspSettled,
+        previousWeeksTargetMet
       );
 
       updates.push({

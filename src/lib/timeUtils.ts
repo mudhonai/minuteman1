@@ -79,7 +79,9 @@ export const calculateNetWorkDuration = (
 export const calculateSurcharge = (
   startTime: string,
   netMinutes: number,
-  customHolidays: string[]
+  customHolidays: string[],
+  uspSettled?: boolean,
+  previousWeeksTargetMet?: boolean
 ): {
   regularMinutes: number;
   surchargeMinutes: number;
@@ -105,14 +107,19 @@ export const calculateSurcharge = (
     regularMinutes = 0; // Alles ist Überstunde
     isSurchargeDay = true; // ECHTER Sondertag
   } 
-  // Samstag: Gesamte Zeit + 30% Zuschlag
+  // Samstag: 60% wenn ÜSP abgegolten UND Vorwochen-Soll erfüllt, sonst 30%
   else if (dayOfWeek === 6) {
-    rate = SURCHARGE_RATES.SATURDAY;
-    label = 'Samstagszuschlag (30%)';
+    if (uspSettled && previousWeeksTargetMet) {
+      rate = SURCHARGE_RATES.SUNDAY; // 60%
+      label = 'Samstagszuschlag (60%)';
+    } else {
+      rate = SURCHARGE_RATES.SATURDAY; // 30%
+      label = 'Samstagszuschlag (30%)';
+    }
     surchargeMinutes = netMinutes;
     regularMinutes = 0; // Alles ist Überstunde
     isSurchargeDay = true; // ECHTER Sondertag
-  } 
+  }
   // Sonntag: Gesamte Zeit + 60% Zuschlag
   else if (dayOfWeek === 0) {
     rate = SURCHARGE_RATES.SUNDAY;
