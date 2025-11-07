@@ -72,11 +72,13 @@ export const OvertimeSummary = ({ timeEntries }: OvertimeSummaryProps) => {
     const monthLabel = format(monthStart, 'MMMM yyyy', { locale: de });
     
     if (!acc[monthKey]) {
-      acc[monthKey] = { label: monthLabel, minutes: 0, date: monthStart };
+      acc[monthKey] = { label: monthLabel, minutes: 0, totalWithSurcharge: 0, date: monthStart };
     }
-    acc[monthKey].minutes += calculateOvertime(entry);
+    const overtimeMinutes = calculateOvertime(entry);
+    acc[monthKey].minutes += overtimeMinutes;
+    acc[monthKey].totalWithSurcharge += overtimeMinutes + entry.surcharge_minutes;
     return acc;
-  }, {} as Record<string, { label: string; minutes: number; date: Date }>);
+  }, {} as Record<string, { label: string; minutes: number; totalWithSurcharge: number; date: Date }>);
 
   // Gruppiere nach Jahr
   const yearlyOvertime = timeEntries.reduce((acc, entry) => {
@@ -200,14 +202,27 @@ export const OvertimeSummary = ({ timeEntries }: OvertimeSummaryProps) => {
             <p className="text-sm text-muted-foreground text-center py-4">Keine Daten verfügbar</p>
           ) : (
             sortedMonths.map((month) => (
-              <div key={month.label} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{month.label}</span>
+              <div key={month.label} className="p-3 bg-muted/50 rounded-lg">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{month.label}</span>
+                  </div>
                 </div>
-                <span className={`font-bold ${month.minutes >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                  {month.minutes >= 0 ? '+' : ''}{formatMinutesToHHMM(month.minutes)}
-                </span>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Überstunden:</span>
+                    <span className={`font-bold ${month.minutes >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                      {month.minutes >= 0 ? '+' : ''}{formatMinutesToHHMM(month.minutes)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Mit Zuschlägen:</span>
+                    <span className={`font-bold ${month.totalWithSurcharge >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                      {month.totalWithSurcharge >= 0 ? '+' : ''}{formatMinutesToHHMM(month.totalWithSurcharge)}
+                    </span>
+                  </div>
+                </div>
               </div>
             ))
           )}
