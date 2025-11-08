@@ -29,8 +29,8 @@ export const OvertimeSummary = ({ timeEntries }: OvertimeSummaryProps) => {
 
   // Verwende die korrigierten Werte aus der Datenbank
   const calculateOvertime = (entry: TimeEntry) => {
-    // Überstunden = reguläre Minuten + Zuschlagsminuten (ohne den Zuschlagsfaktor)
-    return entry.regular_minutes + entry.surcharge_minutes;
+    // surcharge_minutes = rohe Überstunden (ohne Zuschlagsfaktor)
+    return entry.surcharge_minutes;
   };
 
   // Gruppiere nach Woche mit Tagen
