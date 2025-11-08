@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { TimeEntry, AbsenceEntry, TARGET_HOURS_DAILY } from '@/lib/types';
 import { formatMinutesToHHMM } from '@/lib/timeUtils';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, TrendingDown, Minus, Calendar } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface StatisticsProps {
   timeEntries: TimeEntry[];
@@ -24,6 +25,67 @@ const COLORS = {
 export const Statistics = ({ timeEntries, absences }: StatisticsProps) => {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('month');
   const [comparisonMode, setComparisonMode] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const goToPrevious = () => {
+    const newDate = new Date(selectedDate);
+    if (timeRange === 'week') {
+      newDate.setDate(newDate.getDate() - 7);
+    } else if (timeRange === 'month') {
+      newDate.setMonth(newDate.getMonth() - 1);
+    } else {
+      newDate.setFullYear(newDate.getFullYear() - 1);
+    }
+    setSelectedDate(newDate);
+  };
+
+  const goToNext = () => {
+    const newDate = new Date(selectedDate);
+    if (timeRange === 'week') {
+      newDate.setDate(newDate.getDate() + 7);
+    } else if (timeRange === 'month') {
+      newDate.setMonth(newDate.getMonth() + 1);
+    } else {
+      newDate.setFullYear(newDate.getFullYear() + 1);
+    }
+    // Nicht in die Zukunft navigieren
+    if (newDate <= new Date()) {
+      setSelectedDate(newDate);
+    }
+  };
+
+  const goToCurrent = () => {
+    setSelectedDate(new Date());
+  };
+
+  const getPeriodLabel = () => {
+    if (timeRange === 'week') {
+      const weekStart = new Date(selectedDate);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      return `${weekStart.toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })} - ${weekEnd.toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+    } else if (timeRange === 'month') {
+      return selectedDate.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+    } else {
+      return selectedDate.getFullYear().toString();
+    }
+  };
+
+  const isCurrentPeriod = () => {
+    const now = new Date();
+    if (timeRange === 'week') {
+      const weekStart = new Date(selectedDate);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+      const nowWeekStart = new Date(now);
+      nowWeekStart.setDate(nowWeekStart.getDate() - nowWeekStart.getDay() + 1);
+      return weekStart.toISOString().split('T')[0] === nowWeekStart.toISOString().split('T')[0];
+    } else if (timeRange === 'month') {
+      return selectedDate.getMonth() === now.getMonth() && selectedDate.getFullYear() === now.getFullYear();
+    } else {
+      return selectedDate.getFullYear() === now.getFullYear();
+    }
+  };
 
   // Get comparison data for previous period
   const getComparisonStats = (entries: TimeEntry[], currentStart: Date) => {
@@ -109,27 +171,35 @@ export const Statistics = ({ timeEntries, absences }: StatisticsProps) => {
   };
 
   const stats = useMemo(() => {
-    const now = new Date();
     let startDate: Date;
+    let endDate: Date;
 
     if (timeRange === 'week') {
       // Wochenstart: Montag 00:01 Uhr
-      startDate = new Date(now);
+      startDate = new Date(selectedDate);
       startDate.setDate(startDate.getDate() - startDate.getDay() + 1);
       startDate.setHours(0, 1, 0, 0);
+      endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 6);
+      endDate.setHours(23, 59, 59, 999);
     } else if (timeRange === 'month') {
       // Monatsstart: 1. des Monats 00:01 Uhr
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 1, 0, 0);
+      startDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1, 0, 1, 0, 0);
+      endDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0, 23, 59, 59, 999);
     } else {
       // Jahresstart: 1. Januar 00:01 Uhr
-      startDate = new Date(now.getFullYear(), 0, 1, 0, 1, 0, 0);
+      startDate = new Date(selectedDate.getFullYear(), 0, 1, 0, 1, 0, 0);
+      endDate = new Date(selectedDate.getFullYear(), 11, 31, 23, 59, 59, 999);
     }
 
-    const filteredEntries = timeEntries.filter(e => new Date(e.start_time) >= startDate);
+    const filteredEntries = timeEntries.filter(e => {
+      const entryDate = new Date(e.start_time);
+      return entryDate >= startDate && entryDate <= endDate;
+    });
     const filteredAbsences = absences.filter(a => {
       const [year, month, day] = a.date.split('-');
       const absenceDate = new Date(Number(year), Number(month) - 1, Number(day));
-      return absenceDate >= startDate;
+      return absenceDate >= startDate && absenceDate <= endDate;
     });
 
     // Weekly hours data
@@ -247,7 +317,7 @@ export const Statistics = ({ timeEntries, absences }: StatisticsProps) => {
       hoursTrend,
       overtimeTrend,
     };
-  }, [timeEntries, absences, timeRange]);
+  }, [timeEntries, absences, timeRange, selectedDate]);
 
   const getTrendIcon = (trend: number) => {
     if (trend > 5) return <TrendingUp className="h-4 w-4 text-green-500" />;
@@ -257,20 +327,46 @@ export const Statistics = ({ timeEntries, absences }: StatisticsProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Statistiken</h2>
-        <div className="flex gap-2">
-          <Select value={timeRange} onValueChange={(v: any) => setTimeRange(v)}>
+      {/* Header with Navigation */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Statistiken</h2>
+          <Select value={timeRange} onValueChange={(v: any) => { setTimeRange(v); setSelectedDate(new Date()); }}>
             <SelectTrigger className="w-[180px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="week">Diese Woche</SelectItem>
-              <SelectItem value="month">Dieser Monat</SelectItem>
-              <SelectItem value="year">Dieses Jahr</SelectItem>
+              <SelectItem value="week">Woche</SelectItem>
+              <SelectItem value="month">Monat</SelectItem>
+              <SelectItem value="year">Jahr</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        
+        {/* Period Navigation */}
+        <div className="flex items-center justify-between bg-card p-3 rounded-lg border">
+          <Button variant="outline" size="icon" onClick={goToPrevious}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="font-semibold">{getPeriodLabel()}</span>
+          </div>
+          <div className="flex gap-2">
+            {!isCurrentPeriod() && (
+              <Button variant="outline" size="sm" onClick={goToCurrent}>
+                Aktuell
+              </Button>
+            )}
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={goToNext}
+              disabled={isCurrentPeriod()}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
