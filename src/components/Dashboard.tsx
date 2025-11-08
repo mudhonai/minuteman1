@@ -133,21 +133,37 @@ export const Dashboard = ({ currentEntry, timeEntries, absences, status, userId,
     }
     
     if (a.date >= mondayStr && a.date <= sundayStr) {
-      if (a.absence_type === 'urlaub') weekMin += aMin;
-      else if (a.absence_type === 'juep') { weekMin += aMin; weekOT -= aMin; }
+      if (a.absence_type === 'urlaub') {
+        weekMin += aMin;
+      } else if (a.absence_type === 'juep') {
+        // JÜP zählt als Arbeitszeit aber NICHT als Überstunden (da Überstundenabbau)
+        weekMin += aMin;
+      }
     }
     
     if (a.date.startsWith(monthStr)) {
-      if (a.absence_type === 'urlaub') monthMin += aMin;
-      else if (a.absence_type === 'juep') { monthMin += aMin; monthOT -= aMin; }
+      if (a.absence_type === 'urlaub') {
+        monthMin += aMin;
+      } else if (a.absence_type === 'juep') {
+        // JÜP zählt als Arbeitszeit aber NICHT als Überstunden (da Überstundenabbau)
+        monthMin += aMin;
+      }
     }
   });
+
 
   console.log('📊 FINALE WERTE:', { 
     weekMin, 
     weekMinFormatted: formatMinutesToHHMM(weekMin),
+    weekOT,
+    weekOTFormatted: formatMinutesToHHMM(weekOT),
+    monthMin,
+    monthMinFormatted: formatMinutesToHHMM(monthMin),
+    monthOT,
+    monthOTFormatted: formatMinutesToHHMM(monthOT),
     uniqueEntriesCount: unique.length,
-    thisWeekEntries: unique.filter(e => e.date >= mondayStr && e.date <= sundayStr).map(e => ({ date: e.date, min: e.net_work_duration_minutes }))
+    thisWeekEntries: unique.filter(e => e.date >= mondayStr && e.date <= sundayStr).map(e => ({ date: e.date, min: e.net_work_duration_minutes })),
+    absencesThisMonth: absences.filter(a => a.date.startsWith(monthStr)).map(a => ({ date: a.date, type: a.absence_type, hours: a.hours }))
   });
 
   const dashboardData = {
