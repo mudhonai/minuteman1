@@ -50,7 +50,7 @@ export const Absences = ({ absences }: AbsencesProps) => {
   const [singleDate, setSingleDate] = useState<Date | undefined>(new Date());
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [absenceType, setAbsenceType] = useState<AbsenceType>('urlaub');
-  const [hours, setHours] = useState('8.5');
+  const [hours, setHours] = useState('4');
   const [note, setNote] = useState('');
   const [vacationAllowance, setVacationAllowance] = useState<VacationAllowance | null>(null);
   const [isEditingAllowance, setIsEditingAllowance] = useState(false);
@@ -141,10 +141,12 @@ export const Absences = ({ absences }: AbsencesProps) => {
   const openAddDialog = () => {
     setEditingEntry(null);
     setIsMultiDay(false);
-    setSingleDate(new Date());
+    const today = new Date();
+    setSingleDate(today);
     setDateRange(undefined);
     setAbsenceType('urlaub');
-    setHours('8.5');
+    // Freitag (5) hat 4 Stunden, andere Tage 8.5 Stunden
+    setHours(today.getDay() === 5 ? '4' : '8.5');
     setNote('');
     setIsDialogOpen(true);
   };
@@ -200,13 +202,19 @@ export const Absences = ({ absences }: AbsencesProps) => {
           datesToInsert.push(singleDate);
         }
 
-        const entries = datesToInsert.map(date => ({
-          user_id: user.id,
-          date: format(date, 'yyyy-MM-dd'),
-          absence_type: absenceType,
-          hours: parseFloat(hours),
-          note: note.trim() || null,
-        }));
+        const entries = datesToInsert.map(date => {
+          // Freitag (5) hat 4 Stunden, andere Tage 8.5 Stunden
+          const dayOfWeek = date.getDay();
+          const hoursForDay = dayOfWeek === 5 ? 4 : 8.5;
+          
+          return {
+            user_id: user.id,
+            date: format(date, 'yyyy-MM-dd'),
+            absence_type: absenceType,
+            hours: hoursForDay,
+            note: note.trim() || null,
+          };
+        });
 
         const { error } = await supabase
           .from('absence_entries')

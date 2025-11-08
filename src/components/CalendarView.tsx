@@ -90,8 +90,6 @@ export const CalendarView = ({ timeEntries, absences }: CalendarViewProps) => {
     const timeEntry = timeEntries.find(e => e.date === dateStr);
     const absence = absences.find(a => a.date === dateStr);
     
-    console.log('CalendarView - Checking date:', dateStr, 'Found absence:', !!absence, 'Type:', absence?.absence_type);
-    
     const targetMinutes = TARGET_HOURS_DAILY[dayOfWeek] || 0;
     let totalMinutes = 0;
     
