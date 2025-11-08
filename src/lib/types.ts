@@ -18,7 +18,7 @@ export const TARGET_HOURS_MONTHLY = 165 * 60; // 9900 Minuten
 
 // Zuschlagssätze
 export const SURCHARGE_RATES = {
-  SATURDAY: 0.30,
+  SATURDAY: 0.30, // Basis-Samstagszuschlag: 30%
   SUNDAY: 0.60,
   HOLIDAY: 1.30,
 };
