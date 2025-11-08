@@ -27,18 +27,10 @@ export const OvertimeSummary = ({ timeEntries }: OvertimeSummaryProps) => {
     });
   };
 
-  // Berechne Überstunden pro Eintrag
+  // Verwende die korrigierten Werte aus der Datenbank
   const calculateOvertime = (entry: TimeEntry) => {
-    const entryDate = new Date(entry.start_time);
-    const dayOfWeek = entryDate.getDay();
-    const targetMinutes = TARGET_HOURS_DAILY[dayOfWeek] || 0;
-    const isWeekendOrHoliday = dayOfWeek === 0 || dayOfWeek === 6 || entry.is_surcharge_day;
-    
-    if (isWeekendOrHoliday) {
-      return entry.net_work_duration_minutes;
-    } else {
-      return Math.max(0, entry.net_work_duration_minutes - targetMinutes);
-    }
+    // Überstunden = reguläre Minuten + Zuschlagsminuten (ohne den Zuschlagsfaktor)
+    return entry.regular_minutes + entry.surcharge_minutes;
   };
 
   // Gruppiere nach Woche mit Tagen
@@ -76,7 +68,8 @@ export const OvertimeSummary = ({ timeEntries }: OvertimeSummaryProps) => {
     }
     const overtimeMinutes = calculateOvertime(entry);
     acc[monthKey].minutes += overtimeMinutes;
-    acc[monthKey].totalWithSurcharge += overtimeMinutes + entry.surcharge_minutes;
+    // surcharge_amount enthält bereits die Gesamtzeit inkl. Zuschlag
+    acc[monthKey].totalWithSurcharge += entry.surcharge_amount;
     return acc;
   }, {} as Record<string, { label: string; minutes: number; totalWithSurcharge: number; date: Date }>);
 
@@ -144,7 +137,7 @@ export const OvertimeSummary = ({ timeEntries }: OvertimeSummaryProps) => {
                         const dayOfWeek = entryDate.getDay();
                         const targetMinutes = TARGET_HOURS_DAILY[dayOfWeek] || 0;
                         const overtimeMinutes = calculateOvertime(entry);
-                        const totalWithSurcharge = overtimeMinutes + entry.surcharge_minutes;
+                        const totalWithSurcharge = entry.surcharge_amount;
                         
                         return (
                           <div key={entry.id} className="bg-background/50 rounded p-2 text-sm">
