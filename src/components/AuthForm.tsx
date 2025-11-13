@@ -15,17 +15,24 @@ export const AuthForm = () => {
     e.preventDefault();
     setLoading(true);
 
+    console.log('🔐 Auth-Versuch:', { isLogin, email });
+
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        console.log('🔐 Login-Versuch...');
+        const { error, data } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        console.log('🔐 Login erfolgreich:', { userId: data.user?.id, email: data.user?.email });
         toast.success('Erfolgreich angemeldet!');
       } else {
-        const { error } = await supabase.auth.signUp({ email, password });
+        console.log('🔐 Registrierungs-Versuch...');
+        const { error, data } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
+        console.log('🔐 Registrierung erfolgreich:', { userId: data.user?.id, email: data.user?.email });
         toast.success('Konto erstellt! Du kannst dich jetzt anmelden.');
       }
     } catch (error: any) {
+      console.error('🔐 Auth-Fehler:', error);
       toast.error(error.message || 'Ein Fehler ist aufgetreten');
     } finally {
       setLoading(false);
