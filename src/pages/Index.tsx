@@ -44,15 +44,33 @@ const Index = () => {
   });
   
   useEffect(() => {
+    console.log('🔐 Auth-Check: Prüfe bestehende Session...');
+    
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('🔐 Session geladen:', {
+        hasSession: !!session,
+        userId: session?.user?.id,
+        email: session?.user?.email,
+        expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toLocaleString('de-DE') : null
+      });
       setUser(session?.user ?? null);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('🔐 Auth State Change:', {
+        event,
+        hasSession: !!session,
+        userId: session?.user?.id,
+        email: session?.user?.email,
+        expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toLocaleString('de-DE') : null
+      });
       setUser(session?.user ?? null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('🔐 Auth-Listener wird entfernt');
+      subscription.unsubscribe();
+    };
   }, []);
 
   const { currentEntry, timeEntries, settings, loading, status, forceRefresh } = useTimeTracking(user?.id);
@@ -87,7 +105,9 @@ const Index = () => {
   }
 
   const handleSignOut = async () => {
+    console.log('🔐 Abmelden: User meldet sich ab');
     await supabase.auth.signOut();
+    console.log('🔐 Abmelden: Abmeldung abgeschlossen');
   };
 
   return (
