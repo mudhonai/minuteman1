@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import marbleBackground from '@/assets/marble-background.jpg';
 
 export const AuthForm = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -40,7 +41,15 @@ export const AuthForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        backgroundImage: `url(${marbleBackground})`,
+        backgroundSize: 'cover',
+        backgroundAttachment: 'fixed',
+        backgroundPosition: 'center'
+      }}
+    >
       <Card className="w-full max-w-md border-border shadow-2xl">
         <CardHeader className="space-y-1">
           <CardTitle className="text-3xl font-extrabold text-accent text-center">
