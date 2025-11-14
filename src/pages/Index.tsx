@@ -14,6 +14,7 @@ import { useTimeTracking } from '@/hooks/useTimeTracking';
 import { useAbsences } from '@/hooks/useAbsences';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { useGeofencing } from '@/hooks/useGeofencing';
+import { useSessionRefresh } from '@/hooks/useSessionRefresh';
 import { Button } from '@/components/ui/button';
 import marbleBackground from '@/assets/marble-background.jpg';
 
@@ -87,6 +88,12 @@ const Index = () => {
     autoClockOut: settings?.auto_clock_out_enabled || false,
     testMode: settings?.geofence_test_mode || false,
     minAccuracyMeters: settings?.geofence_min_accuracy || 50,
+  });
+
+  // Automatische Session-Verlängerung bei Benutzeraktivität
+  useSessionRefresh({
+    enabled: !!user,
+    inactivityThreshold: 10, // Refresh bei Aktivität innerhalb der letzten 10 Minuten
   });
 
   if (!user) {
